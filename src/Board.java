@@ -73,8 +73,7 @@ public class Board {
 
     /**
      * This method moves a queen on the board.
-     * @params  board (the board configuration before the move)
-     *          col (the column the queen is in; doesn't change after a move)
+     * @param   col (the column the queen is in)
      *          old_row (the row before moving)
      *          new_row (the row after moving)
      */
