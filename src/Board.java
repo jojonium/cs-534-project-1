@@ -47,9 +47,9 @@ public class Board {
      * @return  Nothing
      */
     public void printBoard(int[][] board, int N) {
-        for(int i = 0; i < 5; i++) {
+        for(int i = 0; i < N; i++) {
             String line = "";
-            for (int j = 0; j < 5; j++) {
+            for (int j = 0; j < N; j++) {
                 if (board[i][j] == 0) {
                     line = line.concat(".");
                 } else {

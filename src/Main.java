@@ -12,6 +12,6 @@ public class Main {
         Board b = new Board();
         int[][] board = b.generateBoard(5);
         b.printBoard(board, 5);
-        
+
     }
 }
