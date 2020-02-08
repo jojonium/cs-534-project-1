@@ -93,6 +93,7 @@ public class Board {
         int h = 0;
         int[] queen_positions = this.getQueenPositions();
 
+        // calculate how many queens we are attacking row- and diagonal-wise and add to h
         for(int i = 0; i < N; i++) {
             int row_attack = this.attackRow(queen_positions[i], i, N);
             h += row_attack;
@@ -100,7 +101,37 @@ public class Board {
             h += diag_attack;
         }
 
-        return h;
+        // divide by 2 since we double-count above
+        return (h / 2);
+    }
+
+    /**
+     * This method calculates the first heuristic for the board (lightest queen attacking in/directly).
+     * @param N (the dimension of the square board)
+     */
+    public int h1(int N) {
+        int[] queen_positions = this.getQueenPositions();
+        int[] queen_weights = this.getWeights();
+        int lightest = queen_weights[0]; // is this okay?
+        int attacking = 0; // how many queens we are attacking
+
+        for(int i = 0; i < N; i++) {
+            // calculate the # of queens this queen is attacking (in)directly
+            int row_attack = this.attackRow(queen_positions[i], i, N);
+            attacking += row_attack;
+            int diag_attack = this.attackDiag(queen_positions[i], i, N);
+            attacking += diag_attack;
+
+            // update if we find a lighter attacking queen
+            if (attacking > 0 && queen_weights[i] < lightest) {
+                lightest = queen_weights[i];
+            }
+
+            // reset attacking value for next queen
+            attacking = 0;
+        }
+
+        return lightest;
     }
 
     /**
@@ -113,10 +144,14 @@ public class Board {
     private int attackRow(int row, int col, int N) {
 
         int attacking = 0;
-        int[][] b = this.getBoard();
+        int[] queen_positions = this.getQueenPositions();
 
-        for(int i = col; i < N; i++) {
-            if (i != col && b[row][i] != 0) {
+        for(int i = 0; i < N; i++) {
+            // skip itself
+            if (i == col) { continue; }
+
+            // check if the row is the same
+            if(queen_positions[i] == row) {
                 attacking += 1;
             }
         }
@@ -134,35 +169,36 @@ public class Board {
     private int attackDiag(int row, int col, int N) {
 
         int attacking = 0;
-        int[][] b = this.getBoard();
-        int diag_row = row;
+        int[] queen_positions = this.getQueenPositions();
 
-        // check positive-slope diagonal
-        for(int i = col; i < (N-1); i++) {
-            // early exit
-            if(diag_row <= 0) { break; }
+        for(int i = 0; i < N; i++) {
+            // skip itself
+            if (i == col) { continue; }
 
-            if(b[diag_row-1][i+1] != 0) {
+            // calculate if the row and column difference are the same
+            if( Math.abs(queen_positions[i] - row) == Math.abs(i - col) ) {
                 attacking += 1;
             }
-            diag_row -= 1;
-        }
-
-        // reset row
-        diag_row = row;
-
-        // check negative-slope diagonal
-        for(int j = col; j < (N-1); j++) {
-            // early exit
-            if (diag_row >= (N-1)) { break; }
-
-            if(b[diag_row+1][j+1] != 0) {
-                attacking += 1;
-            }
-            diag_row += 1;
         }
 
         return attacking;
+    }
+
+    /**
+     * This is the main method invoked.
+     * @param args (the command-line arguments)
+     */
+    public static void main(String[] args) {
+
+        Board b = new Board();
+        b.generateBoard(5);
+
+        // print initial board
+        b.printBoard(5);
+
+        System.out.println("The number of queens attacking is " + b.h(5));
+        System.out.println("The weight of the lightest queen attacking is " + b.h1(5));
+
     }
 
 }
