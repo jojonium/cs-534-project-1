@@ -59,13 +59,15 @@ public class Board {
      * @param   N (the size of the board, given by N x N).
      */
     public void printBoard(int N) {
+        int[][] b = this.getBoard();
+
         for(int i = 0; i < N; i++) {
             String line = "";
             for (int j = 0; j < N; j++) {
-                if (this.board[i][j] == 0) {
+                if (b[i][j] == 0) {
                     line = line.concat("  .  ");
                 } else {
-                    line = line.concat("  " + this.board[i][j] + "  ");
+                    line = line.concat("  " + b[i][j] + "  ");
                 }
             }
             System.out.println(line);
@@ -129,9 +131,6 @@ public class Board {
             if (attacking > 0 && queen_weights[i] < lightest) {
                 lightest = queen_weights[i];
             }
-
-            // reset attacking value for next queen
-            attacking = 0;
         }
 
         return lightest;
@@ -197,9 +196,6 @@ public class Board {
         int[] queen_positions = this.getQueenPositions();
 
         for(int i = 0; i < N; i++) {
-            // skip itself
-            if (i == col) { continue; }
-
             // check if the row is the same (and we're not attacking ourself)
             if(i != col && queen_positions[i] == row) {
                 attacking[i] = 1;
