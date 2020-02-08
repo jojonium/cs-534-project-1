@@ -15,15 +15,7 @@ public class Main {
         // print initial board
         b.printBoard(5);
 
-        for (int i = 0; i < 5; i++) {
-            System.out.println();
-            // move queen in first column down one row (wraparound for last row)
-            int position = b.getQueenPositions()[0];
-            b.move_queen(0, position, (position + 1) % 5);
-
-            // print updated board
-            b.printBoard(5);
-        }
+        System.out.println("The simple heuristic for this board is " + b.h(5));
 
     }
 }

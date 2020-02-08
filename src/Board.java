@@ -62,9 +62,9 @@ public class Board {
             String line = "";
             for (int j = 0; j < N; j++) {
                 if (this.board[i][j] == 0) {
-                    line = line.concat(".");
+                    line = line.concat("  .  ");
                 } else {
-                    line = line.concat(String.valueOf(this.board[i][j]));
+                    line = line.concat("  " + this.board[i][j] + "  ");
                 }
             }
             System.out.println(line);
@@ -83,6 +83,86 @@ public class Board {
         this.board[new_row][col] = weight;
         this.board[old_row][col] = 0;
         this.queenPositions[col] = new_row;
+    }
+
+    /**
+     * This method calculates the simple heuristic for the board (# queens attacking in/directly).
+     * @param N (the dimension of the square board)
+     */
+    public int h(int N) {
+        int h = 0;
+        int[] queen_positions = this.getQueenPositions();
+
+        for(int i = 0; i < N; i++) {
+            int row_attack = this.attackRow(queen_positions[i], i, N);
+            h += row_attack;
+            int diag_attack = this.attackDiag(queen_positions[i], i, N);
+            h += diag_attack;
+        }
+
+        return h;
+    }
+
+    /**
+     * This method calculates how many queens a queen is attacking in the same row.
+     * @param row (the row the queen is located in)
+     *        col (the column the queen is located in)
+     *        N (the dimension of the square board)
+     * @return attacking (the number of queens being attacked)
+     */
+    private int attackRow(int row, int col, int N) {
+
+        int attacking = 0;
+        int[][] b = this.getBoard();
+
+        for(int i = col; i < N; i++) {
+            if (i != col && b[row][i] != 0) {
+                attacking += 1;
+            }
+        }
+
+        return attacking;
+    }
+
+    /**
+     * This method calculates how many queens a queen is attacking on its diagonals.
+     * @param row (the row the queen is located in)
+     *        col (the column the queen is located in)
+     *        N (the dimension of the square board)
+     * @return attacking (the number of queens being attacked)
+     */
+    private int attackDiag(int row, int col, int N) {
+
+        int attacking = 0;
+        int[][] b = this.getBoard();
+        int diag_row = row;
+
+        // check positive-slope diagonal
+        for(int i = col; i < (N-1); i++) {
+            // early exit
+            if(diag_row <= 0) { break; }
+
+            if(b[diag_row-1][i+1] != 0) {
+                attacking += 1;
+            }
+            diag_row -= 1;
+        }
+
+        // reset row
+        diag_row = row;
+
+        // check negative-slope diagonal
+        for(int j = col; j < (N-1); j++) {
+            // early exit
+            if (diag_row >= (N-1)) { break; }
+
+            if(b[diag_row+1][j+1] != 0) {
+                attacking += 1;
+            }
+            diag_row += 1;
+        }
+
+        return attacking;
     }
 
 }
