@@ -1,6 +1,7 @@
 // Board class for Heavy N-Queens
 // CS534 Assignment 1
 
+import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.Random;
 import java.util.stream.IntStream;
@@ -75,6 +76,18 @@ public class Board {
     }
 
     /**
+     * This method moves a queen on the board.
+     * @param   col (the column the queen is in)
+     *          new_row (the row to move to)
+     *          positions (the positions of the queens)
+     * @return  new_positions (the new queen positions)
+     */
+    public int[] move_queen(int col, int new_row, int[] positions) {
+        positions[col] = new_row;
+        return positions;
+    }
+
+    /**
      * This method calculates the simple heuristic for the board (# queens attacking in/directly).
      */
     public int h() {
@@ -95,13 +108,36 @@ public class Board {
     }
 
     /**
-     * This method calculates the first heuristic for the board (lightest queen attacking in/directly).
+     * This method calculates the simple heuristic for the board (# queens attacking in/directly).
+     * @param positions (the positions of the queens)
      */
-    public int h1() {
+    public int h(int[] positions) {
+        int h = 0;
+        int N = this.getN();
+
+        // calculate how many queens we are attacking row- and diagonal-wise and add to h
+        for(int i = 0; i < N; i++) {
+            int[] row_attack = this.attackRow(positions[i], i);
+            h += IntStream.of(row_attack).sum();
+            int[] diag_attack = this.attackDiag(positions[i], i);
+            h += IntStream.of(diag_attack).sum();
+        }
+
+        // divide by 2 since we double-count above
+        return (h / 2);
+    }
+
+    /**
+     * This method calculates the first heuristic for the board.
+     * @return lightest_indices (indices of lightest queens attacking in/directly)
+     */
+    public ArrayList<Integer> h1() {
         int[] queen_positions = this.getQueenPositions();
         int[] queen_weights = this.getWeights();
         int N = this.getN();
-        int lightest = queen_weights[0]; // is this okay?
+        ArrayList<Integer> lightest_indices = new ArrayList<>();
+        int lightest_index = queen_positions[0];
+        int lightest_value = 10; // always heavier than heaviest queen
 
         for(int i = 0; i < N; i++) {
             // initialize how many queens we are attacking
@@ -114,12 +150,17 @@ public class Board {
             attacking += IntStream.of(diag_attack).sum();
 
             // update if we find a lighter attacking queen
-            if (attacking > 0 && queen_weights[i] < lightest) {
-                lightest = queen_weights[i];
+            if (attacking > 0 && queen_weights[i] < lightest_value) {
+                lightest_indices.clear();
+                lightest_index = i;
+                lightest_value = queen_weights[lightest_index];
+                lightest_indices.add(i);
+            } else if (attacking > 0 && queen_weights[i] == lightest_value) {
+                lightest_indices.add(i);
             }
         }
 
-        return lightest;
+        return lightest_indices;
     }
 
     /**
@@ -218,6 +259,74 @@ public class Board {
     }
 
     /**
+     * This method performs hill climbing on the board with heuristic 1.
+     */
+    public void hillClimbH1() {
+
+        int[] queen_positions = this.getQueenPositions();
+        int[] queen_weights = this.getWeights();
+        int N = this.getN();
+
+        boolean improvement = true;
+        while(improvement) {
+            // calculate original heuristic of the board
+            ArrayList<Integer> indices = this.h1();
+            System.out.println(indices.toString());
+
+            // we win if the attacking list is empty
+            if(indices.size() == 0) break;
+
+            System.out.println("The index of the lightest queen is " + indices.get(0));
+            System.out.println("The weight of the lightest queen attacking is " + queen_weights[indices.get(0)]);
+
+            // check possible moves we can make
+            int current_queen = indices.get(0);
+            int h = this.h(queen_positions);
+            int h_index = queen_positions[current_queen];
+            improvement = false;
+            for (Integer index : indices) {
+
+                // create a clone of the queen positions for each new piece
+                int[] temp_positions = new int[this.getQueenPositions().length];
+                System.arraycopy(this.getQueenPositions(), 0, temp_positions, 0, this.getQueenPositions().length);
+
+                // for each minimum queen, consider each of its moves
+                for (int j = 0; j < N; j++) {
+                    temp_positions = this.move_queen(index, j, temp_positions);
+
+                    // move the queen that produces the lowest h value
+                    int new_h = this.h(temp_positions);
+                    if (new_h < h) {
+                        h = new_h;
+                        h_index = j;
+                        current_queen = index;
+                        improvement = true;
+                    }
+                }
+            }
+
+            // break if we didn't improve
+            if (!improvement) break;
+
+            // perform the move with the minimum h value
+            this.move_queen(current_queen, h_index);
+
+            // print the board
+            System.out.println("++++++++++++++++++++++++++");
+            this.printBoard();
+        }
+
+    }
+
+    /**
+     * This method performs hill climbing on the board with heuristic 2.
+     */
+    public void hillClimbH2() {
+
+
+    }
+
+    /**
      * This is the main method invoked.
      * @param args (the command-line arguments)
      */
@@ -234,11 +343,11 @@ public class Board {
             b.generateBoard(N);
 
             // print initial board
+            System.out.println("+++++ INITIAL BOARD +++++");
             b.printBoard();
 
-            System.out.println("The number of queens attacking is " + b.h());
-            System.out.println("The weight of the lightest queen attacking is " + b.h1());
-            System.out.println("The sum of the lightest attacking queen in each pair is " + b.h2());
+            // perform hill climbing
+            b.hillClimbH1();
         } else {
             System.out.println("Invalid board dimension");
         }
