@@ -6,15 +6,10 @@ import java.util.stream.IntStream;
 
 public class Board {
 
-    private int[][] board; // holds the board values
     private int[] queenPositions; // holds row position of each queen (index = column)
     private int[] queenWeights; // holds weight of each queen (index = column)
 
     public Board() {}
-
-    public int[][] getBoard() {
-        return board;
-    }
 
     public int[] getQueenPositions() {
         return queenPositions;
@@ -29,7 +24,6 @@ public class Board {
      * @param N (the size of the board, given by N x N).
      */
     public void generateBoard(int N) {
-        this.board = new int[N][N];
         this.queenPositions = new int[N];
         this.queenWeights = new int[N];
 
@@ -42,16 +36,6 @@ public class Board {
             this.queenWeights[i] = rand_weight;
         }
 
-        // now create the board using these values
-        for (int j = 0; j < N; j++) {
-            for (int i = 0; i < N; i++) {
-                if (this.queenPositions[j] == i) {
-                    this.board[i][j] = this.queenWeights[j];
-                } else {
-                    this.board[i][j] = 0;
-                }
-            }
-        }
     }
 
     /**
@@ -59,15 +43,16 @@ public class Board {
      * @param   N (the size of the board, given by N x N).
      */
     public void printBoard(int N) {
-        int[][] b = this.getBoard();
+        int[] queen_positions = this.getQueenPositions();
+        int[] queen_weights = this.getWeights();
 
         for(int i = 0; i < N; i++) {
             String line = "";
             for (int j = 0; j < N; j++) {
-                if (b[i][j] == 0) {
+                if (queen_positions[j] != i) {
                     line = line.concat("  .  ");
                 } else {
-                    line = line.concat("  " + b[i][j] + "  ");
+                    line = line.concat("  " + queen_weights[j] + "  ");
                 }
             }
             System.out.println(line);
@@ -77,15 +62,11 @@ public class Board {
     /**
      * This method moves a queen on the board.
      * @param   col (the column the queen is in)
-     *          old_row (the row before moving)
-     *          new_row (the row after moving)
+     *          new_row (the row to move to)
      */
-    public void move_queen(int col, int old_row, int new_row) {
-        // update new position
-        int weight = this.queenWeights[col];
-        this.board[new_row][col] = weight;
-        this.board[old_row][col] = 0;
-        this.queenPositions[col] = new_row;
+    public void move_queen(int col, int new_row) {
+        int[] queen_positions = this.getQueenPositions();
+        queen_positions[col] = new_row;
     }
 
     /**
@@ -196,7 +177,7 @@ public class Board {
         int[] queen_positions = this.getQueenPositions();
 
         for(int i = 0; i < N; i++) {
-            // check if the row is the same (and we're not attacking ourself)
+            // check if the row is the same (and not self-attacking)
             if(i != col && queen_positions[i] == row) {
                 attacking[i] = 1;
             } else {
