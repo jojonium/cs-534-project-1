@@ -1,6 +1,7 @@
 // Board class for Heavy N-Queens
 // CS534 Assignment 1
 
+import java.util.Scanner;
 import java.util.Random;
 import java.util.stream.IntStream;
 
@@ -8,6 +9,7 @@ public class Board {
 
     private int[] queenPositions; // holds row position of each queen (index = column)
     private int[] queenWeights; // holds weight of each queen (index = column)
+    private int N; // holds dimension of square board
 
     public Board() {}
 
@@ -19,11 +21,14 @@ public class Board {
         return queenWeights;
     }
 
+    public int getN() { return N; }
+
     /**
      * This method places the queens on the board.
      * @param N (the size of the board, given by N x N).
      */
     public void generateBoard(int N) {
+        this.N = N;
         this.queenPositions = new int[N];
         this.queenWeights = new int[N];
 
@@ -40,11 +45,11 @@ public class Board {
 
     /**
      * This method prints the board.
-     * @param   N (the size of the board, given by N x N).
      */
-    public void printBoard(int N) {
+    public void printBoard() {
         int[] queen_positions = this.getQueenPositions();
         int[] queen_weights = this.getWeights();
+        int N = this.getN();
 
         for(int i = 0; i < N; i++) {
             String line = "";
@@ -71,17 +76,17 @@ public class Board {
 
     /**
      * This method calculates the simple heuristic for the board (# queens attacking in/directly).
-     * @param N (the dimension of the square board)
      */
-    public int h(int N) {
+    public int h() {
         int h = 0;
         int[] queen_positions = this.getQueenPositions();
+        int N = this.getN();
 
         // calculate how many queens we are attacking row- and diagonal-wise and add to h
         for(int i = 0; i < N; i++) {
-            int[] row_attack = this.attackRow(queen_positions[i], i, N);
+            int[] row_attack = this.attackRow(queen_positions[i], i);
             h += IntStream.of(row_attack).sum();
-            int[] diag_attack = this.attackDiag(queen_positions[i], i, N);
+            int[] diag_attack = this.attackDiag(queen_positions[i], i);
             h += IntStream.of(diag_attack).sum();
         }
 
@@ -91,11 +96,11 @@ public class Board {
 
     /**
      * This method calculates the first heuristic for the board (lightest queen attacking in/directly).
-     * @param N (the dimension of the square board)
      */
-    public int h1(int N) {
+    public int h1() {
         int[] queen_positions = this.getQueenPositions();
         int[] queen_weights = this.getWeights();
+        int N = this.getN();
         int lightest = queen_weights[0]; // is this okay?
 
         for(int i = 0; i < N; i++) {
@@ -103,9 +108,9 @@ public class Board {
             int attacking = 0;
 
             // calculate the # of queens this queen is attacking (in)directly
-            int[] row_attack = this.attackRow(queen_positions[i], i, N);
+            int[] row_attack = this.attackRow(queen_positions[i], i);
             attacking += IntStream.of(row_attack).sum();
-            int[] diag_attack = this.attackDiag(queen_positions[i], i, N);
+            int[] diag_attack = this.attackDiag(queen_positions[i], i);
             attacking += IntStream.of(diag_attack).sum();
 
             // update if we find a lighter attacking queen
@@ -119,11 +124,11 @@ public class Board {
 
     /**
      * This method calculates the second heuristic for the board (sum of lightest queens attacking in/directly).
-     * @param N (the dimension of the square board)
      */
-    public int h2(int N) {
+    public int h2() {
         int[] queen_positions = this.getQueenPositions();
         int[] queen_weights = this.getWeights();
+        int N = this.getN();
         int h2 = 0;
 
         for(int i = 0; i < N; i++) {
@@ -131,7 +136,7 @@ public class Board {
             int attacking = 0;
 
             // calculate the # of queens this queen is row attacking (in)directly
-            int[] row_attack = this.attackRow(queen_positions[i], i, N);
+            int[] row_attack = this.attackRow(queen_positions[i], i);
             attacking += IntStream.of(row_attack).sum();
 
             // sum for row attacks
@@ -145,7 +150,7 @@ public class Board {
             }
 
             // calculate the # of queens this queen is diagonal attacking (in)directly
-            int[] diag_attack = this.attackDiag(queen_positions[i], i, N);
+            int[] diag_attack = this.attackDiag(queen_positions[i], i);
             attacking += IntStream.of(diag_attack).sum();
 
             // sum for diagonal attacks
@@ -168,13 +173,13 @@ public class Board {
      * This method calculates how many queens a queen is attacking in the same row.
      * @param row (the row the queen is located in)
      *        col (the column the queen is located in)
-     *        N (the dimension of the square board)
      * @return attacking (the positions of the queens being attacked)
      */
-    private int[] attackRow(int row, int col, int N) {
+    private int[] attackRow(int row, int col) {
 
-        int[] attacking = new int[N];
         int[] queen_positions = this.getQueenPositions();
+        int N = this.getN();
+        int[] attacking = new int[N];
 
         for(int i = 0; i < N; i++) {
             // check if the row is the same (and not self-attacking)
@@ -192,12 +197,12 @@ public class Board {
      * This method calculates how many queens a queen is attacking on its diagonals.
      * @param row (the row the queen is located in)
      *        col (the column the queen is located in)
-     *        N (the dimension of the square board)
      * @return attacking (the positions of the queens being attacked)
      */
-    private int[] attackDiag(int row, int col, int N) {
+    private int[] attackDiag(int row, int col) {
 
         int[] queen_positions = this.getQueenPositions();
+        int N = this.getN();
         int[] attacking = new int[N];
 
         for(int i = 0; i < N; i++) {
@@ -218,15 +223,25 @@ public class Board {
      */
     public static void main(String[] args) {
 
-        Board b = new Board();
-        b.generateBoard(5);
+        // get user input for dimension of board
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("Enter dimension of the square board (>= 1): ");
+        int N = Integer.parseInt(scanner.nextLine());
 
-        // print initial board
-        b.printBoard(5);
+        if (N >= 1) {
+            // generate the initial board
+            Board b = new Board();
+            b.generateBoard(N);
 
-        System.out.println("The number of queens attacking is " + b.h(5));
-        System.out.println("The weight of the lightest queen attacking is " + b.h1(5));
-        System.out.println("The sum of the lightest attacking queen in each pair is " + b.h2(5));
+            // print initial board
+            b.printBoard();
+
+            System.out.println("The number of queens attacking is " + b.h());
+            System.out.println("The weight of the lightest queen attacking is " + b.h1());
+            System.out.println("The sum of the lightest attacking queen in each pair is " + b.h2());
+        } else {
+            System.out.println("Invalid board dimension");
+        }
 
     }
 
