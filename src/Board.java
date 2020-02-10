@@ -145,49 +145,66 @@ public class Board {
 
     /**
      * This method calculates the second heuristic for the board (sum of lightest queens attacking in/directly).
+     * @return hl_index (the index of the heaviest queen that is lighter in all its pairs)
      */
     public int h2() {
         int[] queen_positions = this.getQueenPositions();
         int[] queen_weights = this.getWeights();
         int N = this.getN();
         int h2 = 0;
+        int hl_value = 0; // lightest queen will always be bigger
+        int hl_index = queen_positions[0];
 
         for(int i = 0; i < N; i++) {
             // initialize how many queens we are attacking
             int attacking = 0;
 
+            // flag to check if we are lighter than each queen we attack
+            boolean always_lighter = true;
+
             // calculate the # of queens this queen is row attacking (in)directly
             int[] row_attack = this.attackRow(queen_positions[i], i);
             attacking += IntStream.of(row_attack).sum();
-
-            // sum for row attacks
-            if (attacking > 0) {
-                for(int j = 0; j < N; j++) {
-                    // compare this queen to each of the ones it is attacking
-                    if (row_attack[j] == 1) {
-                        h2 += Math.min(queen_weights[i], queen_weights[j]);
-                    }
-                }
-            }
 
             // calculate the # of queens this queen is diagonal attacking (in)directly
             int[] diag_attack = this.attackDiag(queen_positions[i], i);
             attacking += IntStream.of(diag_attack).sum();
 
-            // sum for diagonal attacks
+            // consider each queen we attacked
             if (attacking > 0) {
                 for(int j = 0; j < N; j++) {
                     // compare this queen to each of the ones it is attacking
+                    if (row_attack[j] == 1) {
+                        h2 += Math.pow(Math.min(queen_weights[i], queen_weights[j]), 2);
+
+                        // if we are heavier than the other queen, we aren't HL
+                        if(queen_weights[i] > queen_weights[j]) {
+                            always_lighter = false;
+                        }
+                    }
+
                     if (diag_attack[j] == 1) {
-                        h2 += Math.min(queen_weights[i], queen_weights[j]);
+                        h2 += Math.pow(Math.min(queen_weights[i], queen_weights[j]), 2);
+
+                        // if we are heavier than the other queen, we aren't HL
+                        if(queen_weights[i] > queen_weights[j]) {
+                            always_lighter = false;
+                        }
                     }
                 }
-            }
 
+                // finally, make this the HL queen if are heavier, and were always the lightest in each pair
+                if(always_lighter && queen_weights[i] > hl_value) {
+                    hl_index = i;
+                    hl_value = queen_weights[i];
+                }
+            }
         }
 
         // divide by 2 since we double-count above
-        return (h2 / 2);
+        System.out.println("The value of h2 is: " + (h2 / 2));
+
+        return hl_index;
     }
 
     /**
@@ -255,8 +272,8 @@ public class Board {
             // we win if the attacking list is empty
             if(indices.size() == 0) break;
 
-            System.out.println("The index of the lightest queen is " + indices.get(0));
-            System.out.println("The weight of the lightest queen attacking is " + queen_weights[indices.get(0)]);
+            System.out.println("The weight of the lightest queen(s) attacking is " + queen_weights[indices.get(0)]);
+            System.out.println("The value of h1 is: " + (int)(Math.pow(queen_weights[indices.get(0)], 2)));
 
             // keep track of whether we improved
             boolean improvement = false;
