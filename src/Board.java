@@ -89,26 +89,6 @@ public class Board {
 
     /**
      * This method calculates the simple heuristic for the board (# queens attacking in/directly).
-     */
-    public int h() {
-        int h = 0;
-        int[] queen_positions = this.getQueenPositions();
-        int N = this.getN();
-
-        // calculate how many queens we are attacking row- and diagonal-wise and add to h
-        for(int i = 0; i < N; i++) {
-            int[] row_attack = this.attackRow(queen_positions[i], i);
-            h += IntStream.of(row_attack).sum();
-            int[] diag_attack = this.attackDiag(queen_positions[i], i);
-            h += IntStream.of(diag_attack).sum();
-        }
-
-        // divide by 2 since we double-count above
-        return (h / 2);
-    }
-
-    /**
-     * This method calculates the simple heuristic for the board (# queens attacking in/directly).
      * @param positions (the positions of the queens)
      */
     public int h(int[] positions) {
@@ -136,7 +116,7 @@ public class Board {
         int[] queen_weights = this.getWeights();
         int N = this.getN();
         ArrayList<Integer> lightest_indices = new ArrayList<>();
-        int lightest_index = queen_positions[0];
+        int lightest_index; // keeps track of where the lightest queen is located
         int lightest_value = 10; // always heavier than heaviest queen
 
         for(int i = 0; i < N; i++) {
@@ -267,8 +247,7 @@ public class Board {
         int[] queen_weights = this.getWeights();
         int N = this.getN();
 
-        boolean improvement = true;
-        while(improvement) {
+        while(true) {
             // calculate original heuristic of the board
             ArrayList<Integer> indices = this.h1();
             System.out.println(indices.toString());
@@ -279,11 +258,13 @@ public class Board {
             System.out.println("The index of the lightest queen is " + indices.get(0));
             System.out.println("The weight of the lightest queen attacking is " + queen_weights[indices.get(0)]);
 
+            // keep track of whether we improved
+            boolean improvement = false;
+
             // check possible moves we can make
             int current_queen = indices.get(0);
             int h = this.h(queen_positions);
             int h_index = queen_positions[current_queen];
-            improvement = false;
             for (Integer index : indices) {
 
                 // create a clone of the queen positions for each new piece
