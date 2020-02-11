@@ -2,6 +2,7 @@
 // CS534 Assignment 1
 
 import java.util.ArrayList;
+import java.util.PriorityQueue;
 import java.util.Scanner;
 import java.util.Random;
 import java.util.stream.IntStream;
@@ -235,6 +236,65 @@ public class Board {
     }
 
     /**
+     * This method performs A* on the board.
+     * @param h_to_use (1 for heuristic 1, 2 for heuristic 2)
+     */
+    public void aStar(int h_to_use) {
+
+        int[] queen_positions = this.getQueenPositions();
+        int N = this.getN();
+        ArrayList<Integer> init_candidates; // keeps track of initial candidate queens for movement
+
+        // calculate original heuristic of the board based on which one we are using
+        if (h_to_use == 1) {
+            init_candidates = this.h1();
+        } else {
+            init_candidates = this.h2();
+        }
+        System.out.println("Initial candidates for movement: " + init_candidates.toString());
+
+        // create a priority queue initialized with the candidates
+        PriorityQueue<Integer> queue = new PriorityQueue<>(init_candidates);
+
+        // perform the AStar search, using the queue to decide which node to expand next
+        while(queue.size() > 0) {
+
+            // if the heuristic of the board is 0, we break
+            int h = this.h(queen_positions);
+            if (h == 0) break;
+
+            // pop the front of the queue
+            int current_queen = queue.poll();
+
+            // consider the queen's possible moves
+            int h_index = queen_positions[current_queen];
+            for (int i = 0; i < N; i++) {
+
+                // create a clone of the queen positions for each possible move
+                int[] temp_positions = new int[queen_positions.length];
+                System.arraycopy(queen_positions, 0, temp_positions, 0, queen_positions.length);
+
+                // move the queen in the temporary board
+                temp_positions = this.move_queen(current_queen, i, temp_positions);
+
+                // store the move if it produces the lowest h value
+                int new_h = this.h(temp_positions);
+                if (new_h < h) {
+                    h = new_h;
+                    h_index = i;
+                }
+            }
+
+            // move the queen
+            this.move_queen(current_queen, h_index);
+
+            // print the board
+            System.out.println("++++++++++++++++++++++++++");
+            this.printBoard();
+        }
+    }
+
+    /**
      * This method performs hill climbing on the board.
      * @param h_to_use (1 for heuristic 1, 2 for heuristic 2)
      */
@@ -377,12 +437,23 @@ public class Board {
             System.out.println("Invalid heuristic value");
         }
 
+        // prompt for method
+        System.out.println("Enter 1 for A*, 2 for Hill Climbing: ");
+        int method = Integer.parseInt(scanner.nextLine());
+        if (method != 1 && method != 2) {
+            System.out.println("Invalid method value");
+        }
+
         // print initial board
         System.out.println("+++++ INITIAL BOARD +++++");
         b.printBoard();
 
-        // perform hill climbing
-        b.hillClimb(h);
+        // search using the given method
+        if (method == 1) {
+            b.aStar(h);
+        } else {
+            b.hillClimb(h);
+        }
 
     }
 
