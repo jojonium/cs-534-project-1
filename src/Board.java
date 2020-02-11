@@ -98,7 +98,7 @@ public class Board {
      * @param   col (the column the queen is in)
      *          new_row (the row to move to)
      *          positions (the positions of the queens)
-     * @return  new_positions (the new queen positions)
+     * @return  positions (the new queen positions)
      */
     public int[] move_queen(int col, int new_row, int[] positions) {
         positions[col] = new_row;
@@ -215,7 +215,7 @@ public class Board {
                     }
                 }
 
-                // finally, update HL queens list if are heavier, and were always the lightest in each pair
+                // update (or add to) HL queens list based on the "heaviest-lightest" rule
                 if (queen_weights[i] > hl_value && always_lighter) {
                     hl_indices.clear();
                     hl_index = i;
@@ -354,7 +354,7 @@ public class Board {
         // start by making a new Board instance
         Board b = new Board();
 
-        // get user input for heuristic
+        // create scanner object for user input
         Scanner scanner = new Scanner(System.in);
 
         System.out.println("Want a random board? (yes/no)");
