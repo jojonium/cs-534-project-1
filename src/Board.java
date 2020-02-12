@@ -3,6 +3,7 @@
 
 import java.util.ArrayList;
 import java.util.PriorityQueue;
+import java.util.Random;
 import java.util.stream.IntStream;
 
 public class Board {
@@ -181,64 +182,64 @@ public class Board {
         }
     }
 
-//    /**
-//     * This method performs A* on the board.
-//     * @param h_to_use (1 for heuristic 1, 2 for heuristic 2)
-//     */
-//    public void aStar(int h_to_use) {
-//
-//        int[] queen_positions = this.getQueenPositions();
-//        int N = this.getN();
-//        ArrayList<Integer> init_candidates; // keeps track of initial candidate queens for movement
-//
-//        // calculate original heuristic of the board based on which one we are using
-//        if (h_to_use == 1) {
-//            init_candidates = this.h1();
-//        } else {
-//            init_candidates = this.h2();
-//        }
-//        System.out.println("Initial candidates for movement: " + init_candidates.toString());
-//
-//        // create a priority queue initialized with the candidates
-//        PriorityQueue<Integer> queue = new PriorityQueue<>(init_candidates);
-//
-//        // perform the AStar search, using the queue to decide which node to expand next
-//        while(queue.size() > 0) {
-//
-//            // if the heuristic of the board is 0, we break
-//            int h = this.h(queen_positions);
-//            if (h == 0) break;
-//
-//            // pop the front of the queue
-//            int current_queen = queue.poll();
-//
-//            // consider the queen's possible moves
-//            int h_index = queen_positions[current_queen];
-//            for (int i = 0; i < N; i++) {
-//
-//                // create a clone of the queen positions for each possible move
-//                int[] temp_positions = new int[queen_positions.length];
-//                System.arraycopy(queen_positions, 0, temp_positions, 0, queen_positions.length);
-//
-//                // move the queen in the temporary board
-//                temp_positions = this.move_queen(current_queen, i, temp_positions);
-//
-//                // store the move if it produces the lowest h value
-//                int new_h = this.h(temp_positions);
-//                if (new_h < h) {
-//                    h = new_h;
-//                    h_index = i;
-//                }
-//            }
-//
-//            // move the queen
-//            this.move_queen(current_queen, h_index);
-//
-//            // print the board
-//            System.out.println("++++++++++++++++++++++++++");
-//            this.printBoard();
-//        }
-//    }
+    /**
+     * This method performs A* on the board.
+     * @param h_to_use (1 for heuristic 1, 2 for heuristic 2)
+     */
+    public void aStar(int h_to_use) {
+
+        int[] queen_positions = this.getQueenPositions();
+        int N = this.getN();
+        int lowest_h; // keeps track of lowest h value
+
+        // calculate original heuristic of the board based on which one we are using
+        if (h_to_use == 1) {
+            lowest_h = this.h1(queen_positions);
+        } else {
+            lowest_h = this.h2(queen_positions);
+        }
+
+        // create a priority queue
+        PriorityQueue<Integer> queue = new PriorityQueue<>();
+
+        // perform the AStar search, using the queue to decide which node to expand next
+        while(lowest_h != 0) {
+            // pop the front of the queue
+            int current_queen = queue.poll();
+
+            // consider the queen's possible moves
+            int h_index = queen_positions[current_queen];
+            for (int i = 0; i < N; i++) {
+
+                // create a clone of the queen positions for each possible move
+                int[] temp_positions = new int[queen_positions.length];
+                System.arraycopy(queen_positions, 0, temp_positions, 0, queen_positions.length);
+
+                // move the queen in the temporary board
+                temp_positions = this.move_queen(current_queen, i, temp_positions);
+
+                // store the move if it produces the lowest h value
+                int new_h;
+                if (h_to_use == 1) {
+                    new_h = this.h1(temp_positions);
+                } else {
+                    new_h = this.h2(temp_positions);
+                }
+
+                if (new_h < lowest_h) {
+                    lowest_h = new_h;
+                    h_index = i;
+                }
+            }
+
+            // move the queen
+            this.move_queen(current_queen, h_index);
+
+            // print the board
+            System.out.println("++++++++++++++++++++++++++");
+            this.printBoard();
+        }
+    }
 
     /**
      * This method performs hill climbing on the board.
@@ -249,6 +250,13 @@ public class Board {
         int[] queen_positions = this.getQueenPositions();
         int N = this.getN();
         int lowest_h; // keeps track of lowest h value
+
+        ArrayList<int[]> sideways_moves = new ArrayList<>();
+        int sideways_moves_left = 5; // tells us how many sideways moves we have remaining
+
+        // create a clone of the queen positions for each new piece
+        int[] original_positions = new int[this.getQueenPositions().length];
+        System.arraycopy(this.getQueenPositions(), 0, original_positions, 0, this.getQueenPositions().length);
 
         while(true) {
             // calculate heuristic of the board based on which one we are using
@@ -275,30 +283,50 @@ public class Board {
 
                 // for each queen, consider each of its moves
                 for (int j = 0; j < N; j++) {
-                    temp_positions = this.move_queen(index, j, temp_positions);
+                    // skip over the position the queen is already in
+                    if (j != queen_positions[index]) {
+                        temp_positions = this.move_queen(index, j, temp_positions);
 
-                    // move the queen that produces the lowest heuristic value
-                    int new_h;
-                    if (h_to_use == 1) {
-                        new_h = this.h1(temp_positions);
-                    } else {
-                        new_h = this.h2(temp_positions);
-                    }
+                        // move the queen that produces the lowest heuristic value
+                        int new_h;
+                        if (h_to_use == 1) {
+                            new_h = this.h1(temp_positions);
+                        } else {
+                            new_h = this.h2(temp_positions);
+                        }
 
-                    if (new_h < lowest_h) {
-                        lowest_h = new_h;
-                        current_queen = index;
-                        h_index = j;
-                        improvement = true;
+                        if (new_h < lowest_h) {
+                            lowest_h = new_h;
+                            current_queen = index;
+                            h_index = j;
+                            improvement = true;
+                            sideways_moves.clear();
+                        } else if (new_h == lowest_h) {
+                            // add a sideways move given by (queen column, new queen row in that column)
+                            int[] move_values = new int[]{index, j};
+                            sideways_moves.add(move_values);
+                        }
                     }
                 }
             }
 
-            // break if we didn't improve
-            if (!improvement) break;
+            // break if we didn't improve and are out of sideways moves
+            if (!improvement && sideways_moves_left == 0) {
+                break;
+            } else if (!improvement && sideways_moves_left > 0) {
+                // if we still have sideways moves remaining, perform a sideways move
+                sideways_moves_left -= 1;
+                Random rand = new Random();
+                int[] selected_move_vals = sideways_moves.get(rand.nextInt(sideways_moves.size()));
+                this.move_queen(selected_move_vals[0], selected_move_vals[1]);
+                System.out.println("Performed a sideways move.");
+            } else {
+                // perform the move with the minimum h value
+                this.move_queen(current_queen, h_index);
+            }
 
-            // perform the move with the minimum h value
-            this.move_queen(current_queen, h_index);
+            // clear sideways moves
+            sideways_moves.clear();
 
             // print the board
             System.out.println("++++++++++++++++++++++++++");
