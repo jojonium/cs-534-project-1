@@ -310,9 +310,11 @@ public class Board {
                 }
             }
 
-            // break if we didn't improve and are out of sideways moves
+            // restart if we didn't improve and are out of sideways moves
             if (!improvement && sideways_moves_left == 0) {
-                break;
+                sideways_moves_left = 5;
+                System.arraycopy(original_positions, 0, queen_positions, 0, this.getQueenPositions().length);
+                System.out.println("We got stuck --- starting over.");
             } else if (!improvement && sideways_moves_left > 0) {
                 // if we still have sideways moves remaining, perform a sideways move
                 sideways_moves_left -= 1;
