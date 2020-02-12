@@ -5,14 +5,17 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Random;
 
 public class Main {
 	/**
-	 * parses command-line arguments to get parameters for number of queens,
-	 * which algorithm to use, and which heuristic function to use
+	 * parses command-line arguments to get parameters for number of queens, which
+	 * algorithm to use, and which heuristic function to use
 	 */
 	public static void main(String[] args) {
 		int size = 0;
+		int[] queenPositions = null;
+		int[] queenWeights = null;
 		if (args.length < 3) {
 			showUsage();
 			System.exit(1);
@@ -39,8 +42,8 @@ public class Main {
 				}
 				size = fileLines.size();
 				// assume the board is a square
-				int[] queenPositions = new int[size];
-				int[] queenWeights = new int[size];
+				queenPositions = new int[size];
+				queenWeights = new int[size];
 
 				// parse the file to get the board
 				int row = 0;
@@ -74,9 +77,33 @@ public class Main {
 				throw new Exception("algorithm must be 'H1' or 'H2'");
 			final String heuristic = args[2];
 
+			// generate random board if a file wasn't specified
+			if (queenPositions == null) {
+				queenPositions = new int[size];
+				queenWeights = new int[size];
+				Random rand = new Random();
+				for (int i = 0; i < size; ++i) {
+					queenPositions[i] = rand.nextInt(size);
+					queenWeights[i] = rand.nextInt(9) + 1;
+				}
+			}
+
 			System.out.println("Board size: " + size);
 			System.out.println("Algorithm: " + algorithm);
 			System.out.println("Heuristic: " + heuristic);
+			System.out.println("Board:");
+			for (int i = 0; i < size; i++) {
+				String line = "";
+				for (int j = 0; j < size; j++) {
+					if (queenPositions[j] != i) {
+						line = line.concat("  .  ");
+					} else {
+						line = line.concat("  " + queenWeights[j] + "  ");
+					}
+				}
+				System.out.println(line);
+			}
+
 			System.exit(0);
 			return;
 		} catch (Exception e) {
