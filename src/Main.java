@@ -93,17 +93,6 @@ public class Main {
 			System.out.println("Algorithm: " + algorithm);
 			System.out.println("Heuristic: " + heuristic);
 			System.out.println("Board:");
-//			for (int i = 0; i < size; i++) {
-//				String line = "";
-//				for (int j = 0; j < size; j++) {
-//					if (queenPositions[j] != i) {
-//						line = line.concat("  .  ");
-//					} else {
-//						line = line.concat("  " + queenWeights[j] + "  ");
-//					}
-//				}
-//				System.out.println(line);
-//			}
 			b.printBoard();
 
 			// TODO add AStar
