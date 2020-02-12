@@ -13,7 +13,7 @@ public class Main {
 	 * algorithm to use, and which heuristic function to use
 	 */
 	public static void main(String[] args) {
-		int size = 0;
+		int size;
 		int[] queenPositions = null;
 		int[] queenWeights = null;
 		if (args.length < 3) {
@@ -27,7 +27,7 @@ public class Main {
 			size = Integer.parseInt(args[0]);
 		} catch (NumberFormatException nfe) {
 			// first arg is not a number, see if it's a filename
-			ArrayList<String> fileLines = new ArrayList<String>();
+			ArrayList<String> fileLines = new ArrayList<>();
 			try {
 				File file = new File(args[0]);
 				BufferedReader br = new BufferedReader(new FileReader(file));
@@ -88,29 +88,34 @@ public class Main {
 				}
 			}
 
+			Board b = new Board(queenPositions, queenWeights);
 			System.out.println("Board size: " + size);
 			System.out.println("Algorithm: " + algorithm);
 			System.out.println("Heuristic: " + heuristic);
 			System.out.println("Board:");
-			for (int i = 0; i < size; i++) {
-				String line = "";
-				for (int j = 0; j < size; j++) {
-					if (queenPositions[j] != i) {
-						line = line.concat("  .  ");
-					} else {
-						line = line.concat("  " + queenWeights[j] + "  ");
-					}
-				}
-				System.out.println(line);
+//			for (int i = 0; i < size; i++) {
+//				String line = "";
+//				for (int j = 0; j < size; j++) {
+//					if (queenPositions[j] != i) {
+//						line = line.concat("  .  ");
+//					} else {
+//						line = line.concat("  " + queenWeights[j] + "  ");
+//					}
+//				}
+//				System.out.println(line);
+//			}
+			b.printBoard();
+
+			// TODO add AStar
+			if (algorithm.equals("Greedy hill climbing")) {
+				b.hillClimb((heuristic.equals("H1")) ? 1 : 2);
 			}
 
 			System.exit(0);
-			return;
 		} catch (Exception e) {
 			System.err.println(e.toString());
 			showUsage();
 			System.exit(1);
-			return;
 		}
 	}
 
