@@ -201,19 +201,25 @@ public class Board {
         }
 
         // create a mapping of board string representations to AStar values
+        // Example: "10230" represents [1, 0, 2, 3, 0] for each queen's row position on the board (index = column)
         Map<String,Integer> h_map = new HashMap<>();
+
+        // initialize the mapping with the initial board and h value TODO add estimated cost to goal to the h value
         h_map.put(this.board_to_string(queen_positions), h);
         lowest_total_cost = h;
         best_board = this.board_to_string(queen_positions);
 
-        // create a priority queue
+        // create a priority queue to keep track of which boards are the most promising
+        // compares map entries by value to determine which board is at the front of the node
         PriorityQueue<Map.Entry<String, java.lang.Integer>> queue =
                 new PriorityQueue<>(Map.Entry.comparingByValue());
+
+        // initialize the queue with the initial board configuration
         queue.addAll(h_map.entrySet());
 
         // perform the AStar search, using the queue to decide which node to expand next
         while(queue.size() > 0) {
-            // pop the front of the queue and convert to integer array
+            // pop the front of the queue and convert key (a String as described at the definition of h_map) to an integer array
             Map.Entry<String, Integer> current_board = queue.poll();
             int[] new_positions = this.string_to_board(current_board.getKey());
 
@@ -251,7 +257,7 @@ public class Board {
                             new_h = this.h2(temp_positions);
                         }
 
-                        // add these values to hash map and queue if they don't exist yet
+                        // add these values to hash map and queue if they don't exist yet TODO is total_cost calculated correctly?
                         String board_string = this.board_to_string(temp_positions);
                         int total_cost = new_h + movement_cost;
                         if(!h_map.containsKey(board_string)) {
