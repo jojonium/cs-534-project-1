@@ -1,9 +1,7 @@
 // Board class for Heavy N-Queens
 // CS534 Assignment 1
 
-import java.util.ArrayList;
-import java.util.PriorityQueue;
-import java.util.Random;
+import java.util.*;
 import java.util.stream.IntStream;
 
 public class Board {
@@ -26,16 +24,16 @@ public class Board {
 
     /**
      * This method prints the board.
+     * @param positions (the queen positions on the board)
      */
-    public void printBoard() {
-        int[] queen_positions = this.getQueenPositions();
+    public void printBoard(int[] positions) {
         int[] queen_weights = this.getWeights();
         int N = this.getN();
 
         for(int i = 0; i < N; i++) {
             String line = "";
             for (int j = 0; j < N; j++) {
-                if (queen_positions[j] != i) {
+                if (positions[j] != i) {
                     line = line.concat("  .  ");
                 } else {
                     line = line.concat("  " + queen_weights[j] + "  ");
@@ -189,56 +187,96 @@ public class Board {
     public void aStar(int h_to_use) {
 
         int[] queen_positions = this.getQueenPositions();
+        int[] queen_weights = this.getWeights();
         int N = this.getN();
-        int lowest_h; // keeps track of lowest h value
+        int lowest_total_cost; // keeps track of lowest total cost
+        String best_board; // keeps track of our best board
 
         // calculate original heuristic of the board based on which one we are using
+        int h;
         if (h_to_use == 1) {
-            lowest_h = this.h1(queen_positions);
+            h = this.h1(queen_positions);
         } else {
-            lowest_h = this.h2(queen_positions);
+            h = this.h2(queen_positions);
         }
 
+        // create a mapping of board string representations to AStar values
+        Map<String,Integer> h_map = new HashMap<>();
+        h_map.put(this.board_to_string(queen_positions), h);
+        lowest_total_cost = h;
+        best_board = this.board_to_string(queen_positions);
+
         // create a priority queue
-        PriorityQueue<Integer> queue = new PriorityQueue<>();
+        PriorityQueue<Map.Entry<String, java.lang.Integer>> queue =
+                new PriorityQueue<>(Map.Entry.comparingByValue());
+        queue.addAll(h_map.entrySet());
 
         // perform the AStar search, using the queue to decide which node to expand next
-        while(lowest_h != 0) {
-            // pop the front of the queue
-            int current_queen = queue.poll();
+        while(queue.size() > 0) {
+            // pop the front of the queue and convert to integer array
+            Map.Entry<String, Integer> current_board = queue.poll();
+            int[] new_positions = this.string_to_board(current_board.getKey());
 
-            // consider the queen's possible moves
-            int h_index = queen_positions[current_queen];
+            // if h value is 0, we win
+            if(h_to_use == 1) {
+                if (this.h1(new_positions) == 0) break;
+            } else {
+                if (this.h2(new_positions) == 0) break;
+            }
+
+            // consider all possible board moves and add to queue
             for (int i = 0; i < N; i++) {
 
                 // create a clone of the queen positions for each possible move
-                int[] temp_positions = new int[queen_positions.length];
-                System.arraycopy(queen_positions, 0, temp_positions, 0, queen_positions.length);
+                int[] temp_positions = new int[new_positions.length];
+                System.arraycopy(new_positions, 0, temp_positions, 0, new_positions.length);
 
-                // move the queen in the temporary board
-                temp_positions = this.move_queen(current_queen, i, temp_positions);
+                for (int j = 0; j < N; j++) {
 
-                // store the move if it produces the lowest h value
-                int new_h;
-                if (h_to_use == 1) {
-                    new_h = this.h1(temp_positions);
-                } else {
-                    new_h = this.h2(temp_positions);
-                }
+                    if (j != new_positions[i]) {
+                        // move the queen in the temporary board
+                        temp_positions = this.move_queen(i, j, temp_positions);
 
-                if (new_h < lowest_h) {
-                    lowest_h = new_h;
-                    h_index = i;
+                        // calculate the cost of movement
+                        int movement_cost = 0;
+                        for(int k = 0; k < N; k++) {
+                            movement_cost += (int)(Math.pow(queen_weights[k], 2)) * Math.abs(temp_positions[k] - queen_positions[k]);
+                        }
+
+                        // calculate the new h value
+                        int new_h;
+                        if (h_to_use == 1) {
+                            new_h = this.h1(temp_positions);
+                        } else {
+                            new_h = this.h2(temp_positions);
+                        }
+
+                        // add these values to hash map and queue if they don't exist yet
+                        String board_string = this.board_to_string(temp_positions);
+                        int total_cost = new_h + movement_cost;
+                        if(!h_map.containsKey(board_string)) {
+                            h_map.put(board_string, total_cost);
+                            queue.add(new AbstractMap.SimpleEntry<>(board_string, total_cost));
+                        }
+
+                        // store best board we have
+                        if (total_cost < lowest_total_cost) {
+                            lowest_total_cost = total_cost;
+                            best_board = this.board_to_string(temp_positions);
+                        }
+                    }
                 }
             }
 
-            // move the queen
-            this.move_queen(current_queen, h_index);
-
             // print the board
             System.out.println("++++++++++++++++++++++++++");
-            this.printBoard();
+            this.printBoard(new_positions);
         }
+
+        // at the end, print our best board
+        System.out.println("Best board:");
+        this.printBoard(this.string_to_board(best_board));
+
     }
 
     /**
@@ -332,7 +370,7 @@ public class Board {
 
             // print the board
             System.out.println("++++++++++++++++++++++++++");
-            this.printBoard();
+            this.printBoard(queen_positions);
         }
 
     }
@@ -381,6 +419,36 @@ public class Board {
         }
 
         return attacking;
+    }
+
+    /**
+     * This method converts an integer array representation of a board to a string representation.
+     * @param positions (i.e. [0, 4, 0, 3, 2] = "04032")
+     * @return pos_string (the string representation)
+     */
+    private String board_to_string(int[] positions) {
+        StringBuilder pos_string = new StringBuilder();
+        for (int position : positions) {
+            pos_string.append(position).append(",");
+        }
+        // remove final comma
+        return pos_string.toString().substring(0, pos_string.length() - 1);
+    }
+
+    /**
+     * This method converts a string representation of a board to an integer array representation.
+     * @param board_string (i.e. "04032" = [0, 4, 0, 3, 2])
+     * @return positions (the integer array representation of the board)
+     */
+    private int[] string_to_board(String board_string) {
+        String[] board_array = board_string.split(",");
+        int length = board_array.length;
+        int[] positions = new int[length];
+        for(int i = 0; i < length; i++) {
+            positions[i] = Integer.parseInt(board_array[i]);
+        }
+
+        return positions;
     }
 
 }

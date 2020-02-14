@@ -93,11 +93,12 @@ public class Main {
 			System.out.println("Algorithm: " + algorithm);
 			System.out.println("Heuristic: " + heuristic);
 			System.out.println("Board:");
-			b.printBoard();
+			b.printBoard(queenPositions);
 
-			// TODO add AStar
 			if (algorithm.equals("Greedy hill climbing")) {
 				b.hillClimb((heuristic.equals("H1")) ? 1 : 2);
+			} else {
+				b.aStar((heuristic.equals("H1")) ? 1 : 2);
 			}
 
 			System.exit(0);
