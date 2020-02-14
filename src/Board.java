@@ -187,9 +187,8 @@ public class Board {
     public void aStar(int h_to_use) {
 
         int[] queen_positions = this.getQueenPositions();
-        int[] queen_weights = this.getWeights();
         int N = this.getN();
-        int lowest_total_cost; // keeps track of lowest total cost
+        int lowest_total_cost; // keeps track of lowest heuristic value
         String best_board; // keeps track of our best board
 
         // calculate original heuristic of the board based on which one we are using
@@ -204,7 +203,7 @@ public class Board {
         // Example: "10230" represents [1, 0, 2, 3, 0] for each queen's row position on the board (index = column)
         Map<String,Integer> h_map = new HashMap<>();
 
-        // initialize the mapping with the initial board and h value TODO add estimated cost to goal to the h value
+        // initialize the mapping with the initial board and h value
         h_map.put(this.board_to_string(queen_positions), h);
         lowest_total_cost = h;
         best_board = this.board_to_string(queen_positions);
@@ -243,12 +242,6 @@ public class Board {
                         // move the queen in the temporary board
                         temp_positions = this.move_queen(i, j, temp_positions);
 
-                        // calculate the cost of movement
-                        int movement_cost = 0;
-                        for(int k = 0; k < N; k++) {
-                            movement_cost += (int)(Math.pow(queen_weights[k], 2)) * Math.abs(temp_positions[k] - queen_positions[k]);
-                        }
-
                         // calculate the new h value
                         int new_h;
                         if (h_to_use == 1) {
@@ -257,17 +250,16 @@ public class Board {
                             new_h = this.h2(temp_positions);
                         }
 
-                        // add these values to hash map and queue if they don't exist yet TODO is total_cost calculated correctly?
+                        // add these values to hash map and queue if they don't exist yet
                         String board_string = this.board_to_string(temp_positions);
-                        int total_cost = new_h + movement_cost;
                         if(!h_map.containsKey(board_string)) {
-                            h_map.put(board_string, total_cost);
-                            queue.add(new AbstractMap.SimpleEntry<>(board_string, total_cost));
+                            h_map.put(board_string, new_h);
+                            queue.add(new AbstractMap.SimpleEntry<>(board_string, new_h));
                         }
 
                         // store best board we have
-                        if (total_cost < lowest_total_cost) {
-                            lowest_total_cost = total_cost;
+                        if (new_h < lowest_total_cost) {
+                            lowest_total_cost = new_h;
                             best_board = this.board_to_string(temp_positions);
                         }
                     }
@@ -279,9 +271,13 @@ public class Board {
             this.printBoard(new_positions);
         }
 
-        // at the end, print our best board
+        // at the end, print our best board and its statistics
         System.out.println("Best board:");
-        this.printBoard(this.string_to_board(best_board));
+        int[] best_board_positions = this.string_to_board(best_board);
+        this.printBoard(best_board_positions);
+
+        // calculate the cost of movement
+        System.out.println("Total solution cost: " + this.calculate_movement_cost(best_board_positions, queen_positions));
 
     }
 
@@ -379,6 +375,9 @@ public class Board {
             this.printBoard(queen_positions);
         }
 
+        // at the end, print the total solution cost
+        System.out.println("Total solution cost: " + this.calculate_movement_cost(queen_positions, original_positions));
+
     }
 
     /**
@@ -425,6 +424,24 @@ public class Board {
         }
 
         return attacking;
+    }
+
+    /**
+     * This method calculates the total cost of a solution by comparing the distances between the original and final positions.
+     * @param final_positions (the final board configuration)
+     *        original_positions (the original board configuration)
+     * @return total_movement_cost (the total cost of movement for the given solution)
+     */
+    private int calculate_movement_cost(int[] final_positions, int[] original_positions) {
+        int[] queen_weights = this.getWeights();
+
+        // calculate the cost of movement
+        int total_movement_cost = 0;
+        for(int i = 0; i < N; i++) {
+            total_movement_cost += (int)(Math.pow(queen_weights[i], 2)) * Math.abs(final_positions[i] - original_positions[i]);
+        }
+
+        return total_movement_cost;
     }
 
     /**
