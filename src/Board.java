@@ -191,6 +191,9 @@ public class Board {
         int lowest_total_cost; // keeps track of lowest heuristic value
         String best_board; // keeps track of our best board
 
+        // keeps track of how much time has elapsed since we started
+        long startTime = System.currentTimeMillis();
+
         // calculate original heuristic of the board based on which one we are using
         int h;
         if (h_to_use == 1) {
@@ -218,8 +221,14 @@ public class Board {
 
         // perform the AStar search, using the queue to decide which node to expand next
         while(queue.size() > 0) {
+
+            // if the time elapsed is more than 10 seconds, break
+            long currentTime = System.currentTimeMillis();
+            if ( (currentTime - startTime) > 10000) break;
+
             // pop the front of the queue and convert key (a String as described at the definition of h_map) to an integer array
             Map.Entry<String, Integer> current_board = queue.poll();
+            assert current_board != null;
             int[] new_positions = this.string_to_board(current_board.getKey());
 
             // if h value is 0, we win
@@ -266,18 +275,17 @@ public class Board {
                 }
             }
 
-            // print the board
-            System.out.println("++++++++++++++++++++++++++");
-            this.printBoard(new_positions);
+//            // print the board
+//            System.out.println("++++++++++++++++++++++++++");
+//            this.printBoard(new_positions);
         }
 
-        // at the end, print our best board and its statistics
-        System.out.println("Best board:");
+        // at the end, print final board and statistics
+        long endTime = System.currentTimeMillis();
+        System.out.println("Final board configuration:");
         int[] best_board_positions = this.string_to_board(best_board);
         this.printBoard(best_board_positions);
-
-        // calculate the cost of movement
-        System.out.println("Total solution cost: " + this.calculate_movement_cost(best_board_positions, queen_positions));
+        this.print_statistics(startTime, endTime, best_board_positions, queen_positions, h_to_use);
 
     }
 
@@ -298,7 +306,15 @@ public class Board {
         int[] original_positions = new int[this.getQueenPositions().length];
         System.arraycopy(this.getQueenPositions(), 0, original_positions, 0, this.getQueenPositions().length);
 
+        // keeps track of how much time has elapsed since we started
+        long startTime = System.currentTimeMillis();
+
         while(true) {
+
+            // if the time elapsed is more than 10 seconds, break
+            long currentTime = System.currentTimeMillis();
+            if ( (currentTime - startTime) > 10000) break;
+
             // calculate heuristic of the board based on which one we are using
             if (h_to_use == 1) {
                 lowest_h = this.h1(queen_positions);
@@ -354,14 +370,15 @@ public class Board {
             if (!improvement && sideways_moves_left == 0) {
                 sideways_moves_left = 5;
                 System.arraycopy(original_positions, 0, queen_positions, 0, this.getQueenPositions().length);
-                System.out.println("We got stuck --- starting over.");
+                //System.out.println("We got stuck --- starting over.");
             } else if (!improvement && sideways_moves_left > 0) {
                 // if we still have sideways moves remaining, perform a sideways move
                 sideways_moves_left -= 1;
                 Random rand = new Random();
+                // TODO sometimes get an IllegalArgumentException when rand.nextInt returns 0...need to check if sideways_moves is not empty?
                 int[] selected_move_vals = sideways_moves.get(rand.nextInt(sideways_moves.size()));
                 this.move_queen(selected_move_vals[0], selected_move_vals[1]);
-                System.out.println("Performed a sideways move.");
+                //System.out.println("Performed a sideways move.");
             } else {
                 // perform the move with the minimum h value
                 this.move_queen(current_queen, h_index);
@@ -370,13 +387,16 @@ public class Board {
             // clear sideways moves
             sideways_moves.clear();
 
-            // print the board
-            System.out.println("++++++++++++++++++++++++++");
-            this.printBoard(queen_positions);
+//            // print the board
+//            System.out.println("++++++++++++++++++++++++++");
+//            this.printBoard(queen_positions);
         }
 
-        // at the end, print the total solution cost
-        System.out.println("Total solution cost: " + this.calculate_movement_cost(queen_positions, original_positions));
+        // at the end, print statistics
+        long endTime = System.currentTimeMillis();
+        System.out.println("Final board configuration:");
+        this.printBoard(queen_positions);
+        this.print_statistics(startTime, endTime, queen_positions, original_positions, h_to_use);
 
     }
 
@@ -472,6 +492,25 @@ public class Board {
         }
 
         return positions;
+    }
+
+    /**
+     * This method converts a string representation of a board to an integer array representation.
+     * @param startTime (the starting time of the simulation)
+     *        endTime (the ending time of the simulation)
+     *        final_positions (the final board configuration)
+     *        original_positions (the original board configuration)
+     *        h_to_use (1 for first heuristic, 2 for second heuristic)
+     */
+    private void print_statistics(long startTime, long endTime, int[] final_positions, int[] original_positions, int h_to_use) {
+        long time_elapsed = endTime - startTime;
+        System.out.println("Total time elapsed before finding a solution (milliseconds): " + time_elapsed);
+        if (h_to_use == 1) {
+            System.out.println("Final heuristic value of board: " + this.h1(final_positions));
+        } else {
+            System.out.println("Final heuristic value of board: " + this.h2(final_positions));
+        }
+        System.out.println("Total solution cost: " + this.calculate_movement_cost(final_positions, original_positions));
     }
 
 }
