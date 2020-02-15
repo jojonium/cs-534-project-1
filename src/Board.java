@@ -190,6 +190,7 @@ public class Board {
         int N = this.getN();
         int lowest_total_cost; // keeps track of lowest heuristic value
         String best_board; // keeps track of our best board
+        int nodes_expanded = 0; // keeps track of how many nodes we have expanded
 
         // keeps track of how much time has elapsed since we started
         long startTime = System.currentTimeMillis();
@@ -230,6 +231,9 @@ public class Board {
             Map.Entry<String, Integer> current_board = queue.poll();
             assert current_board != null;
             int[] new_positions = this.string_to_board(current_board.getKey());
+
+            // increment the number of expanded nodes
+            nodes_expanded += 1;
 
             // if h value is 0, we win
             if(h_to_use == 1) {
@@ -285,7 +289,7 @@ public class Board {
         System.out.println("Final board configuration:");
         int[] best_board_positions = this.string_to_board(best_board);
         this.printBoard(best_board_positions);
-        this.print_statistics(startTime, endTime, best_board_positions, queen_positions, h_to_use);
+        this.print_statistics(startTime, endTime, best_board_positions, queen_positions, h_to_use, nodes_expanded);
 
     }
 
@@ -298,8 +302,10 @@ public class Board {
         int[] queen_positions = this.getQueenPositions();
         int N = this.getN();
         int lowest_h; // keeps track of lowest h value
+        int nodes_expanded = 0; // keeps track of how many nodes we expanded
 
         ArrayList<int[]> sideways_moves = new ArrayList<>();
+        int total_sideways_moves = 5; // keeps track of how many sideways moves are available at each iteration
         int sideways_moves_left = 5; // tells us how many sideways moves we have remaining
 
         // create a clone of the queen positions for each new piece
@@ -314,6 +320,9 @@ public class Board {
             // if the time elapsed is more than 10 seconds, break
             long currentTime = System.currentTimeMillis();
             if ( (currentTime - startTime) > 10000) break;
+
+            // increment the number of nodes expanded
+            nodes_expanded += 1;
 
             // calculate heuristic of the board based on which one we are using
             if (h_to_use == 1) {
@@ -368,7 +377,8 @@ public class Board {
 
             // restart if we didn't improve and are out of sideways moves
             if (!improvement && sideways_moves_left == 0) {
-                sideways_moves_left = 5;
+                total_sideways_moves += 1;
+                sideways_moves_left = total_sideways_moves;
                 System.arraycopy(original_positions, 0, queen_positions, 0, this.getQueenPositions().length);
                 //System.out.println("We got stuck --- starting over.");
             } else if (!improvement && sideways_moves_left > 0) {
@@ -386,17 +396,13 @@ public class Board {
 
             // clear sideways moves
             sideways_moves.clear();
-
-//            // print the board
-//            System.out.println("++++++++++++++++++++++++++");
-//            this.printBoard(queen_positions);
         }
 
         // at the end, print statistics
         long endTime = System.currentTimeMillis();
         System.out.println("Final board configuration:");
         this.printBoard(queen_positions);
-        this.print_statistics(startTime, endTime, queen_positions, original_positions, h_to_use);
+        this.print_statistics(startTime, endTime, queen_positions, original_positions, h_to_use, nodes_expanded);
 
     }
 
@@ -465,6 +471,25 @@ public class Board {
     }
 
     /**
+     * This method calculates the depth of the search tree.
+     * @param final_positions (the final board configuration)
+     *        original_positions (the original board configuration)
+     * @return total_positions_different (the search tree depth, based on how many queens moved)
+     */
+    private int calculate_search_depth(int[] final_positions, int[] original_positions) {
+
+        // calculate how many positions are different from the original board configuration
+        int total_positions_different = 0;
+        for(int i = 0; i < N; i++) {
+            if (final_positions[i] != original_positions[i]) {
+                total_positions_different += 1;
+            }
+        }
+
+        return total_positions_different;
+    }
+
+    /**
      * This method converts an integer array representation of a board to a string representation.
      * @param positions (i.e. [0, 4, 0, 3, 2] = "04032")
      * @return pos_string (the string representation)
@@ -495,14 +520,15 @@ public class Board {
     }
 
     /**
-     * This method converts a string representation of a board to an integer array representation.
+     * This method prints statistics related to the simulation.
      * @param startTime (the starting time of the simulation)
      *        endTime (the ending time of the simulation)
      *        final_positions (the final board configuration)
      *        original_positions (the original board configuration)
      *        h_to_use (1 for first heuristic, 2 for second heuristic)
+     *        nodes_expanded (the number of nodes we expanded in our search)
      */
-    private void print_statistics(long startTime, long endTime, int[] final_positions, int[] original_positions, int h_to_use) {
+    private void print_statistics(long startTime, long endTime, int[] final_positions, int[] original_positions, int h_to_use, int nodes_expanded) {
         long time_elapsed = endTime - startTime;
         System.out.println("Total time elapsed before finding a solution (milliseconds): " + time_elapsed);
         if (h_to_use == 1) {
@@ -511,6 +537,8 @@ public class Board {
             System.out.println("Final heuristic value of board: " + this.h2(final_positions));
         }
         System.out.println("Total solution cost: " + this.calculate_movement_cost(final_positions, original_positions));
+        System.out.println("Number of nodes expanded: " + nodes_expanded);
+        System.out.println("Minimum search depth of tree: " + this.calculate_search_depth(final_positions, original_positions));
     }
 
 }
