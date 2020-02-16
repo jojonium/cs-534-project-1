@@ -385,10 +385,17 @@ public class Board {
                 // if we still have sideways moves remaining, perform a sideways move
                 sideways_moves_left -= 1;
                 Random rand = new Random();
-                // TODO sometimes get an IllegalArgumentException when rand.nextInt returns 0...need to check if sideways_moves is not empty?
-                int[] selected_move_vals = sideways_moves.get(rand.nextInt(sideways_moves.size()));
-                this.move_queen(selected_move_vals[0], selected_move_vals[1]);
-                //System.out.println("Performed a sideways move.");
+
+                // only make a sideways move if we can (i.e. if we're not at a local max)
+                if(sideways_moves.size() > 0) {
+                    int[] selected_move_vals = sideways_moves.get(rand.nextInt(sideways_moves.size()));
+                    this.move_queen(selected_move_vals[0], selected_move_vals[1]);
+                    //System.out.println("Performed a sideways move.");
+                } else {
+                    total_sideways_moves += 1;
+                    sideways_moves_left = total_sideways_moves;
+                    System.arraycopy(original_positions, 0, queen_positions, 0, this.getQueenPositions().length);
+                }
             } else {
                 // perform the move with the minimum h value
                 this.move_queen(current_queen, h_index);
