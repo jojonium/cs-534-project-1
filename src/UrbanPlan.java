@@ -11,11 +11,24 @@ public class UrbanPlan {
 	private int numResidential;//third line of input
 	
 	private int finalScore;
+	private long finalTime;
 	
 	private String[][] board;//rest of input
 	
 	public String[][] getBoard() {
 		return this.board;
+	}
+	
+	public int getNumIndustrial() {
+		return this.numIndustrial;
+	}
+	
+	public int getNumCommercial() {
+		return this.numCommercial;
+	}
+	
+	public int getNumResidential() {
+		return this.numResidential;
 	}
 	
 	/**
@@ -37,7 +50,6 @@ public class UrbanPlan {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		// TODO Auto-generated method stub
 		UrbanPlan up;
 		
 		ArrayList<String> fileLines = new ArrayList<>();
@@ -78,9 +90,6 @@ public class UrbanPlan {
 		up.printBoard();
 		System.out.println("Initial Score: " + up.finalScore);
 		up.hillClimb();
-		System.out.println();
-		up.printBoard();
-		System.out.println("Final Score: " + up.finalScore);
 	}
 	
 	/**
@@ -115,80 +124,146 @@ public class UrbanPlan {
 	 * Updates the board
 	 */
 	public void hillClimb() {
-		int currentScore = this.finalScore;
+		//int currentScore = this.finalScore;
 		String[][] curBest = new String[this.board.length][this.board[0].length];
 		curBest = copy2dArray(curBest);
 		
 		String[][] tempBoard = new String[this.board.length][this.board[0].length];
 		tempBoard = copy2dArray(tempBoard);
+		
+		String[][] semiFinalBoard = new String[this.board.length][this.board[0].length];
+		semiFinalBoard = copy2dArray(semiFinalBoard);
 
         int industrialLeft = this.numIndustrial;
         int commercialLeft = this.numCommercial;
         int residentialLeft = this.numResidential;
         
+        int temperature = 100; //high starting temperature for simulated annealing
+        Random random = new Random();
+        boolean annealFlag = false;
+        int numTrials = 0;
+        
 		//possible moves include: add, remove, and move area
         boolean improvement = true;
-        while(improvement) {
-        	improvement = false;
-        	String moveType = "I";
-        	int testScore = currentScore;
-        	String[][] testBoard = new String[this.board.length][this.board[0].length];
-        	testBoard = copy2dArray(tempBoard, testBoard);
-			for(int i=0;i<tempBoard.length;i++) {
-				for(int j=0;j<tempBoard[i].length;j++) {					
-					if(industrialLeft > 0 && !tempBoard[i][j].equals("X")) {
-						tempBoard = copy2dArray(curBest, tempBoard);
-						tempBoard[i][j] = "I";
-						int tempScore = calculateScore(tempBoard);
-						if(tempScore > testScore) {
-							testScore = tempScore;
-				        	testBoard = copy2dArray(tempBoard, testBoard);
-							moveType = "I";
-						}
-					}
-					if(commercialLeft > 0 && !tempBoard[i][j].equals("X")) {
-						tempBoard = copy2dArray(curBest, tempBoard);
-						tempBoard[i][j] = "C";
-						int tempScore = calculateScore(tempBoard);
-						if(tempScore > testScore) {
-							testScore = tempScore;
-				        	testBoard = copy2dArray(tempBoard, testBoard);
-							moveType = "C";
-						}
-					}
-					if(residentialLeft > 0 && !tempBoard[i][j].equals("X")) {
-						tempBoard = copy2dArray(curBest, tempBoard);
-						tempBoard[i][j] = "R";
-				        int tempScore = calculateScore(tempBoard);
-				        if(tempScore > testScore) {
-				        	testScore = tempScore;
-				        	testBoard = copy2dArray(tempBoard, testBoard);
-				        	moveType = "R";
-				        }
-					}
-				}
-			}
-			if(testScore>currentScore) {
-				currentScore = testScore;
-				curBest = copy2dArray(testBoard, curBest);
-				improvement = true;
-				switch(moveType) {
-				case "I":
-					industrialLeft--;
-					break;
-				case "C":
-					commercialLeft--;
-					break;
-				case "R":
-					residentialLeft--;
-					break;
-				}
-			}
+        long startTime = System.currentTimeMillis();
+        long currentTime = startTime;
+        while((currentTime - startTime < 10000)) {
+        	if(temperature > 0 && numTrials % 100 == 0) {
+        		//temperature--;
+        		//System.out.println(temperature);
+        	}
+        	numTrials++;
+        	industrialLeft = this.numIndustrial;
+            commercialLeft = this.numCommercial;
+            residentialLeft = this.numResidential;
+            int testScore = 0;
+            int currentScore = 0;
+            improvement = true;
+            curBest = copy2dArray(curBest);
+        	while(improvement) {
+            	improvement = false;
+            	annealFlag = false;
+            	String moveType = "I";
+            	testScore = currentScore;
+        		tempBoard = copy2dArray(tempBoard);
+            	String[][] testBoard = new String[this.board.length][this.board[0].length];
+            	testBoard = copy2dArray(tempBoard, testBoard);
+    			for(int i=0;i<tempBoard.length;i++) {
+    				for(int j=0;j<tempBoard[i].length;j++) {					
+    					if(industrialLeft > 0 && !tempBoard[i][j].equals("X")) {
+    						tempBoard = copy2dArray(curBest, tempBoard);
+    						tempBoard[i][j] = "I";
+    						int tempScore = calculateScore(tempBoard);
+    						if(tempScore >= testScore) {
+    							testScore = tempScore;
+    				        	testBoard = copy2dArray(tempBoard, testBoard);
+    							moveType = "I";
+    						}else if(random.nextInt(1000) < temperature) {
+    							testScore = tempScore;
+    				        	testBoard = copy2dArray(tempBoard, testBoard);
+    							moveType = "I";
+    							annealFlag = true;
+    							i = tempBoard.length;
+    							break;
+    						}
+    					}
+    					if(commercialLeft > 0 && !tempBoard[i][j].equals("X")) {
+    						tempBoard = copy2dArray(curBest, tempBoard);
+    						tempBoard[i][j] = "C";
+    						int tempScore = calculateScore(tempBoard);
+    						if(tempScore >= testScore) {
+    							testScore = tempScore;
+    				        	testBoard = copy2dArray(tempBoard, testBoard);
+    							moveType = "C";
+    						}else if(random.nextInt(1000) < temperature) {
+    							testScore = tempScore;
+    				        	testBoard = copy2dArray(tempBoard, testBoard);
+    							moveType = "C";
+    							annealFlag = true;
+    							i = tempBoard.length;
+    							break;
+    						}
+    					}
+    					if(residentialLeft > 0 && !tempBoard[i][j].equals("X")) {
+    						tempBoard = copy2dArray(curBest, tempBoard);
+    						tempBoard[i][j] = "R";
+    				        int tempScore = calculateScore(tempBoard);
+    				        if(tempScore >= testScore) {
+    				        	testScore = tempScore;
+    				        	testBoard = copy2dArray(tempBoard, testBoard);
+    				        	moveType = "R";
+    				        }else if(random.nextInt(1000) < temperature) {
+    							testScore = tempScore;
+    				        	testBoard = copy2dArray(tempBoard, testBoard);
+    							moveType = "R";
+    							annealFlag = true;
+    							i = tempBoard.length;
+    							break;
+    						}
+    					}
+    				}
+    			}
+    			if(testScore>currentScore || annealFlag) {
+    				currentScore = testScore;
+    				curBest = copy2dArray(testBoard, curBest);
+    				improvement = true;
+    				switch(moveType) {
+    				case "I":
+    					industrialLeft--;
+    					break;
+    				case "C":
+    					commercialLeft--;
+    					break;
+    				case "R":
+    					residentialLeft--;
+    					break;
+    				}
+    			}
+    			
+            }
+        	currentTime = System.currentTimeMillis();
+        	if(currentScore > this.finalScore) {
+        		this.finalScore = currentScore;
+        		semiFinalBoard = copy2dArray(curBest, semiFinalBoard);
+        		this.finalTime = currentTime - startTime;
+        		//System.out.println(this.finalTime);
+        	}
         }
-		this.finalScore = calculateScore(curBest);
-		this.board = curBest;
+		this.board = semiFinalBoard;
+		
+		System.out.println();
+		printBoard();
+		System.out.println("Final Score: " + finalScore);
+		System.out.println("Time to find Solution: " + finalTime + " milliseconds, (" + (double)finalTime/1000 + " seconds).");
+    	System.out.println("In 10 seconds " + numTrials + " trials happened");
 	}
 	
+	/**
+	 * calculates the score of a board
+	 * uses the weights of the original board to determine build costs
+	 * @param b the board to calculate the score of
+	 * @return the score of the board
+	 */
 	public int calculateScore(String[][] b) {
 		int currentScore = 0;
 		for(int i=0;i<b.length;i++) {
@@ -199,6 +274,8 @@ public class UrbanPlan {
 					currentScore -= 10 * checkRangeTwo("X", b, i, j);
 					if(!this.board[i][j].equals("X") && !this.board[i][j].equals("S")) {
 						currentScore -= (2 + Integer.parseInt(this.board[i][j]));
+					}else if(this.board[i][j].equals("S")) {
+						currentScore -= 1;
 					}
 				}else if(b[i][j].equals("C")) {
 					currentScore -= 20 * checkRangeTwo("X", b, i, j);
@@ -206,6 +283,8 @@ public class UrbanPlan {
 					currentScore += 4 * checkRangeThree("R", b, i, j);
 					if(!this.board[i][j].equals("X") && !this.board[i][j].equals("S")) {
 						currentScore -= (2 + Integer.parseInt(this.board[i][j]));
+					}else if(this.board[i][j].equals("S")) {
+						currentScore -= 1;
 					}
 				}else if(b[i][j].equals("R")) {
 					currentScore -= 20 * checkRangeTwo("X", b, i, j);
@@ -214,6 +293,8 @@ public class UrbanPlan {
 					currentScore -= 5 * checkRangeThree("I", b, i, j);
 					if(!this.board[i][j].equals("X") && !this.board[i][j].equals("S")) {
 						currentScore -= (2 + Integer.parseInt(this.board[i][j]));
+					}else if(this.board[i][j].equals("S")) {
+						currentScore -= 1;
 					}
 				}
 			}
@@ -229,8 +310,6 @@ public class UrbanPlan {
 	 * @param j j index
 	 * @return the number of occurences 
 	 */
-	
-	//someone check this math please it's wonky
 	public int checkRangeTwo(String a, String[][] board, int i, int j) {
 		int occurences = 0;
 		if(i-2 >= 0) {
@@ -330,6 +409,11 @@ public class UrbanPlan {
 		return occurences;
 	}
 	
+	/**
+	 * Copies the original board into an array
+	 * @param dest the array to copy to
+	 * @return the new board
+	 */
 	public String[][] copy2dArray(String[][] dest){
 		for(int i=0;i<dest.length;i++) {
 			System.arraycopy(this.board[i], 0, dest[i], 0, this.board[i].length);
@@ -337,6 +421,12 @@ public class UrbanPlan {
 		return dest;
 	}
 	
+	/**
+	 * copies a 2d array from src to dest
+	 * @param src the array to copy
+	 * @param dest the array to copy into
+	 * @return the new array
+	 */
 	public String[][] copy2dArray(String[][] src, String[][] dest){
 		for(int i=0;i<dest.length;i++) {
 			System.arraycopy(src[i], 0, dest[i], 0, src[i].length);
