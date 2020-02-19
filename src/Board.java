@@ -278,10 +278,6 @@ public class Board {
                     }
                 }
             }
-
-//            // print the board
-//            System.out.println("++++++++++++++++++++++++++");
-//            this.printBoard(new_positions);
         }
 
         // at the end, print final board and statistics
@@ -380,7 +376,6 @@ public class Board {
                 total_sideways_moves += 1;
                 sideways_moves_left = total_sideways_moves;
                 System.arraycopy(original_positions, 0, queen_positions, 0, this.getQueenPositions().length);
-                //System.out.println("We got stuck --- starting over.");
             } else if (!improvement && sideways_moves_left > 0) {
                 // if we still have sideways moves remaining, perform a sideways move
                 sideways_moves_left -= 1;
@@ -390,7 +385,6 @@ public class Board {
                 if(sideways_moves.size() > 0) {
                     int[] selected_move_vals = sideways_moves.get(rand.nextInt(sideways_moves.size()));
                     this.move_queen(selected_move_vals[0], selected_move_vals[1]);
-                    //System.out.println("Performed a sideways move.");
                 } else {
                     total_sideways_moves += 1;
                     sideways_moves_left = total_sideways_moves;
@@ -535,17 +529,30 @@ public class Board {
      *        h_to_use (1 for first heuristic, 2 for second heuristic)
      *        nodes_expanded (the number of nodes we expanded in our search)
      */
-    private void print_statistics(long startTime, long endTime, int[] final_positions, int[] original_positions, int h_to_use, int nodes_expanded) {
+    private void print_statistics(long startTime, long endTime, int[] final_positions, int[] original_positions,
+                                  int h_to_use, int nodes_expanded) {
         long time_elapsed = endTime - startTime;
-        System.out.println("Total time elapsed before finding a solution (milliseconds): " + time_elapsed);
         if (h_to_use == 1) {
             System.out.println("Final heuristic value of board: " + this.h1(final_positions));
         } else {
             System.out.println("Final heuristic value of board: " + this.h2(final_positions));
         }
-        System.out.println("Total solution cost: " + this.calculate_movement_cost(final_positions, original_positions));
         System.out.println("Number of nodes expanded: " + nodes_expanded);
-        System.out.println("Minimum search depth of tree: " + this.calculate_search_depth(final_positions, original_positions));
+        System.out.println("Total time elapsed before finding a solution (milliseconds): " + time_elapsed);
+        int search_depth = this.calculate_search_depth(final_positions, original_positions);
+        System.out.println("Minimum search depth of tree: " + search_depth);
+        if (search_depth > 0) System.out.println("Effective branching factor: " + (nodes_expanded / search_depth));
+        System.out.println("Total solution cost: " + this.calculate_movement_cost(final_positions, original_positions));
+        System.out.println("Moves to reach goal: ");
+        this.print_move_sequence(final_positions, original_positions);
+    }
+
+    private void print_move_sequence(int[] final_positions, int[] original_positions) {
+        for(int i = 0; i < N; i++) {
+            if (final_positions[i] != original_positions[i]) {
+                System.out.println("  Moved queen in column index " + i + " to row index " + final_positions[i]);
+            }
+        }
     }
 
 }

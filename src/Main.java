@@ -82,6 +82,7 @@ public class Main {
 				queenPositions = new int[size];
 				queenWeights = new int[size];
 				Random rand = new Random();
+				//rand.setSeed(11);
 				for (int i = 0; i < size; ++i) {
 					queenPositions[i] = rand.nextInt(size);
 					queenWeights[i] = rand.nextInt(9) + 1;
