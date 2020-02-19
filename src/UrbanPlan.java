@@ -1,6 +1,8 @@
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -15,18 +17,34 @@ public class UrbanPlan {
 	
 	private String[][] board;//rest of input
 	
+	/**
+	 * Getter for board
+	 * @return the original board
+	 */
 	public String[][] getBoard() {
 		return this.board;
 	}
 	
+	/**
+	 * getter for numIndustrial
+	 * @return returns the original number of industrial areas
+	 */
 	public int getNumIndustrial() {
 		return this.numIndustrial;
 	}
 	
+	/**
+	 * getter for numCommercial
+	 * @return the original number of commercial areas
+	 */
 	public int getNumCommercial() {
 		return this.numCommercial;
 	}
 	
+	/**
+	 * getter for numResidential
+	 * @return the original number of residential areas
+	 */
 	public int getNumResidential() {
 		return this.numResidential;
 	}
@@ -52,6 +70,7 @@ public class UrbanPlan {
 	public static void main(String[] args) {
 		UrbanPlan up;
 		
+		//parses input
 		ArrayList<String> fileLines = new ArrayList<>();
 		try {
 			File file = new File(args[0]);
@@ -87,9 +106,32 @@ public class UrbanPlan {
 			return;
 		}
 		
+		System.out.println("Initial map state:");
 		up.printBoard();
 		System.out.println("Initial Score: " + up.finalScore);
-		up.hillClimb();
+		//runs genetic algorithm or hill climbing
+		if(args[1].equals("HC")) {
+			up.hillClimb();
+		}else if(args[1].equals("GA")){
+			//todo: genetic algorithm
+		}else {
+			System.out.println("please input an algorithm argument (GA, or HC)\nThe format for input is ./UrbanPlan [filename] [algorithm]");
+		}
+	}
+	
+	/**
+	 * produces a string containing the state of the board
+	 * @return a string of the state of the board
+	 */
+	public String boardContent() {
+		String boardContent = "";
+		for(String[] row : board) {
+			for(String col : row) {
+				boardContent += col + ", ";
+			}
+			boardContent += "\n";
+		}
+		return boardContent;
 	}
 	
 	/**
@@ -124,7 +166,9 @@ public class UrbanPlan {
 	 * Updates the board
 	 */
 	public void hillClimb() {
-		//int currentScore = this.finalScore;
+		//set up the boards needed for testing
+		//note: there may be a better way to do this but I can't figure it out right now 
+		//		and deleting anything breaks everything :'^(
 		String[][] curBest = new String[this.board.length][this.board[0].length];
 		curBest = copy2dArray(curBest);
 		
@@ -133,10 +177,6 @@ public class UrbanPlan {
 		
 		String[][] semiFinalBoard = new String[this.board.length][this.board[0].length];
 		semiFinalBoard = copy2dArray(semiFinalBoard);
-
-        int industrialLeft = this.numIndustrial;
-        int commercialLeft = this.numCommercial;
-        int residentialLeft = this.numResidential;
         
         int temperature = 100; //high starting temperature for simulated annealing
         Random random = new Random();
@@ -147,29 +187,44 @@ public class UrbanPlan {
         boolean improvement = true;
         long startTime = System.currentTimeMillis();
         long currentTime = startTime;
+        
+        //loop through trials until we hit 10 seconds
         while((currentTime - startTime < 10000)) {
-        	if(temperature > 0 && numTrials % 100 == 0) {
-        		//temperature--;
-        		//System.out.println(temperature);
+        	//annealing starts after 3 seconds to have lots of randomness to encourage placement
+        	if(temperature > 0 && numTrials % 1000 == 0 && currentTime-startTime>3000) {
+        		temperature-=10;
         	}
         	numTrials++;
-        	industrialLeft = this.numIndustrial;
-            commercialLeft = this.numCommercial;
-            residentialLeft = this.numResidential;
+        	
+        	//set & reset all counters to their initial values
+        	int industrialLeft = this.numIndustrial;
+            int commercialLeft = this.numCommercial;
+            int residentialLeft = this.numResidential;
             int testScore = 0;
             int currentScore = 0;
             improvement = true;
             curBest = copy2dArray(curBest);
+            
+            //perform a hill climbing
         	while(improvement) {
+        		//set some initial flags
             	improvement = false;
             	annealFlag = false;
             	String moveType = "I";
+            	
+            	//update the test score
             	testScore = currentScore;
+            	
+            	//reset the test board
         		tempBoard = copy2dArray(tempBoard);
             	String[][] testBoard = new String[this.board.length][this.board[0].length];
             	testBoard = copy2dArray(tempBoard, testBoard);
+            	
+            	//loop through all possible moves and pick the best one
     			for(int i=0;i<tempBoard.length;i++) {
-    				for(int j=0;j<tempBoard[i].length;j++) {					
+    				for(int j=0;j<tempBoard[i].length;j++) {		
+    					
+    					//check if we can place an industrial area
     					if(industrialLeft > 0 && !tempBoard[i][j].equals("X")) {
     						tempBoard = copy2dArray(curBest, tempBoard);
     						tempBoard[i][j] = "I";
@@ -187,6 +242,8 @@ public class UrbanPlan {
     							break;
     						}
     					}
+    					
+    					//check if we can place a commercial area
     					if(commercialLeft > 0 && !tempBoard[i][j].equals("X")) {
     						tempBoard = copy2dArray(curBest, tempBoard);
     						tempBoard[i][j] = "C";
@@ -204,6 +261,8 @@ public class UrbanPlan {
     							break;
     						}
     					}
+    					
+    					//check if we can place a residential area
     					if(residentialLeft > 0 && !tempBoard[i][j].equals("X")) {
     						tempBoard = copy2dArray(curBest, tempBoard);
     						tempBoard[i][j] = "R";
@@ -223,6 +282,7 @@ public class UrbanPlan {
     					}
     				}
     			}
+    			//check if the new move was better than previous or if we are annealing
     			if(testScore>currentScore || annealFlag) {
     				currentScore = testScore;
     				curBest = copy2dArray(testBoard, curBest);
@@ -242,19 +302,18 @@ public class UrbanPlan {
     			
             }
         	currentTime = System.currentTimeMillis();
+        	
+        	//check if this random iteration did better than any previous trials
         	if(currentScore > this.finalScore) {
         		this.finalScore = currentScore;
         		semiFinalBoard = copy2dArray(curBest, semiFinalBoard);
         		this.finalTime = currentTime - startTime;
-        		//System.out.println(this.finalTime);
         	}
         }
+        
+        //update the final board and print/export stats
 		this.board = semiFinalBoard;
-		
-		System.out.println();
-		printBoard();
-		System.out.println("Final Score: " + finalScore);
-		System.out.println("Time to find Solution: " + finalTime + " milliseconds, (" + (double)finalTime/1000 + " seconds).");
+		printStats();
     	System.out.println("In 10 seconds " + numTrials + " trials happened");
 	}
 	
@@ -266,9 +325,11 @@ public class UrbanPlan {
 	 */
 	public int calculateScore(String[][] b) {
 		int currentScore = 0;
+		
+		//loop through the board
 		for(int i=0;i<b.length;i++) {
 			for(int j=0;j<b[i].length;j++) {
-				//I, C, R
+				//Check the score based on industrial areas (I)
 				if(b[i][j].equals("I")) {
 					currentScore += 2 * checkRangeTwo("I", b, i, j);
 					currentScore -= 10 * checkRangeTwo("X", b, i, j);
@@ -277,6 +338,7 @@ public class UrbanPlan {
 					}else if(this.board[i][j].equals("S")) {
 						currentScore -= 1;
 					}
+				//Check the score based on industrial areas (I)
 				}else if(b[i][j].equals("C")) {
 					currentScore -= 20 * checkRangeTwo("X", b, i, j);
 					currentScore -= 4 * checkRangeTwo("C", b, i, j);
@@ -286,6 +348,7 @@ public class UrbanPlan {
 					}else if(this.board[i][j].equals("S")) {
 						currentScore -= 1;
 					}
+				//Check the score based on industrial areas (I)
 				}else if(b[i][j].equals("R")) {
 					currentScore -= 20 * checkRangeTwo("X", b, i, j);
 					currentScore += 10 * checkRangeTwo("S", b, i, j);
@@ -432,5 +495,65 @@ public class UrbanPlan {
 			System.arraycopy(src[i], 0, dest[i], 0, src[i].length);
 		}
 		return dest;
+	}
+	
+	/**
+	 * Prints the final results and outputs to a file
+	 */
+	public void printStats() {
+		
+		//print stats
+		System.out.println();
+		System.out.println("Optimal Urban Plan:");
+		printBoard();
+		System.out.println("Final Score: " + this.finalScore);
+		System.out.println("Time to find Solution: " + this.finalTime + " milliseconds, (" + (double)this.finalTime/1000 + " seconds).");
+		int[] usage = countUsage();
+		System.out.println("This solution used " + usage[0] + " out of " + this.numIndustrial + " possible industrial areas.");
+		System.out.println("This solution used " + usage[1] + " out of " + this.numCommercial + " possible commercial areas.");
+		System.out.println("This solution used " + usage[2] + " out of " + this.numResidential + " possible residential areas.");
+		
+		//write stats to file
+		try {
+			FileWriter writer = new FileWriter("UrbanPlanResults.txt");
+			writer.write("Optimal Urban Plan: \n");
+			writer.write(boardContent());
+			writer.write("Final Score: " + this.finalScore + "\n");
+			writer.write("Time to find Solution: " + this.finalTime + " milliseconds, (" + (double)this.finalTime/1000 + " seconds)\n");
+			writer.write("This solution used " + usage[0] + " out of " + this.numIndustrial + " possible industrial areas.\n");
+			writer.write("This solution used " + usage[1] + " out of " + this.numCommercial + " possible commercial areas.\n");
+			writer.write("This solution used " + usage[2] + " out of " + this.numResidential + " possible residential areas.\n");
+			writer.close();
+			System.out.println("Results written to UrbanPlanResults.txt");
+		} catch (IOException e) {
+			System.out.println("An error occurred writing the file.");
+			e.printStackTrace();
+		}
+	}
+	
+	/**
+	 * counts the number of industrial, commercial, and residential areas used
+	 * @return an array containing [numIndustrial, numCommerical, numResidential]
+	 */
+	public int[] countUsage() {
+		int industrialUsed = 0;
+		int commericalUsed = 0;
+		int residentialUsed = 0;
+		for(int i=0;i<this.board.length;i++) {
+			for(int j=0;j<this.board[i].length;j++) {
+				switch(this.board[i][j]) {
+					case "I":
+						industrialUsed++;
+						break;
+					case "C":
+						commericalUsed++;
+						break;
+					case "R":
+						residentialUsed++;
+						break;
+				}
+			}
+		}
+		return new int[] {industrialUsed, commericalUsed, residentialUsed};
 	}
 }
