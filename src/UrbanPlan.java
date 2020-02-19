@@ -4,6 +4,8 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 
 public class UrbanPlan {
@@ -113,7 +115,7 @@ public class UrbanPlan {
 		if(args[1].equals("HC")) {
 			up.hillClimb();
 		}else if(args[1].equals("GA")){
-			//todo: genetic algorithm
+			up.geneticAlgorithm();
 		}else {
 			System.out.println("please input an algorithm argument (GA, or HC)\nThe format for input is ./UrbanPlan [filename] [algorithm]");
 		}
@@ -555,5 +557,76 @@ public class UrbanPlan {
 			}
 		}
 		return new int[] {industrialUsed, commericalUsed, residentialUsed};
+	}
+
+	public void geneticAlgorithm() {
+		int k = 4;
+		//list variable
+		ArrayList<String[][]> boardList = new ArrayList<String[][]>();
+
+		//generate k random boards
+		for(int i = 0; i < k; i++) {
+			//generate board
+			boardList.add(generateBoard());
+			System.out.println();
+			//add board to list
+		}
+	}
+
+	public String[][] generateBoard() {
+		String[][] boardToReturn = new String[this.board.length][this.board[0].length];
+		boardToReturn = copy2dArray(boardToReturn);
+		//generate 3 random numbers for number of I, C, R to place down
+
+		Random rand = new Random();
+		int indRand = rand.nextInt(this.numIndustrial + 1);
+		int comRand = rand.nextInt(this.numCommercial + 1);
+		int resRand = rand.nextInt(this.numResidential + 1);
+
+		//given an array of all the available locations, shuffle it and take the first
+		//get available locations helper function
+
+		ArrayList<int[]> freeLocations = getAvailableLocations(boardToReturn);
+		Collections.shuffle(freeLocations);
+
+		//for each loop (ind, com, res), take the next occurring thing on shuffled list and put that letter there
+
+
+		int count = 0;
+		for(int i = 0; i < indRand && freeLocations.size() > 0; i++) {
+			int[] coords = freeLocations.get(count);
+			count++;
+			boardToReturn[coords[0]][coords[1]] = "I";
+		}
+		for(int j = 0; j < resRand && freeLocations.size() > 0; j++) {
+			int[] coords = freeLocations.get(count);
+			count++;
+			boardToReturn[coords[0]][coords[1]] = "R";
+		}
+		for(int k = 0; k < comRand && freeLocations.size() > 0; k++) {
+			int[] coords = freeLocations.get(count);
+			count++;
+			boardToReturn[coords[0]][coords[1]] = "C";
+		}
+
+		printBoard(boardToReturn);
+
+		//if there is a S, place R, I, then C
+		//if no S, place I, R, C
+
+		return boardToReturn;
+	}
+
+	public ArrayList<int[]> getAvailableLocations(String[][] tempBoard) {
+		ArrayList<int[]> freeLocations = new ArrayList<int[]>();
+		for(int i = 0; i < tempBoard.length; i++) {
+			for(int j = 0 ; j < tempBoard[i].length; j++) {
+				if(!tempBoard[i][j].equals("X")) {
+					freeLocations.add(new int[]{i, j});
+				}
+			}
+		}
+
+		return freeLocations;
 	}
 }
