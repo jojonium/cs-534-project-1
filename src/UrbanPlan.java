@@ -508,8 +508,8 @@ public class UrbanPlan {
 		System.out.println();
 		System.out.println("Optimal Urban Plan:");
 		printBoard();
-		System.out.println("Final Score: " + this.finalScore);
-		System.out.println("Time to find Solution: " + this.finalTime + " milliseconds, (" + (double)this.finalTime/1000 + " seconds).");
+		System.out.println("Best Score: " + this.finalScore);
+		System.out.println("Time at which best score was achieved: " + this.finalTime + " milliseconds, (" + (double)this.finalTime/1000 + " seconds).");
 		int[] usage = countUsage();
 		System.out.println("This solution used " + usage[0] + " out of " + this.numIndustrial + " possible industrial areas.");
 		System.out.println("This solution used " + usage[1] + " out of " + this.numCommercial + " possible commercial areas.");
@@ -576,6 +576,8 @@ public class UrbanPlan {
 
 		long startTime = System.currentTimeMillis();
 		long currentTime = startTime;
+		this.finalTime = startTime;
+		this.finalScore = calculateScore(this.bestBoard(boardList));
 
 		int iterations = 0;
 		//loop through trials until we hit 10 seconds
@@ -587,6 +589,13 @@ public class UrbanPlan {
 			String[][] secondBoard = parents.get(1);
 
 			ArrayList<String[][]> children = crossover(firstBoard, secondBoard);
+			for(String[][] child : children) {
+				int babyScore = this.calculateScore(child);
+				if(babyScore > this.finalScore) {
+					this.finalScore = babyScore;
+					this.finalTime = System.currentTimeMillis() - startTime;
+				}
+			}
 			boardList.addAll(children);
 
 			//kill 2
@@ -596,10 +605,10 @@ public class UrbanPlan {
 			currentTime = System.currentTimeMillis();
 			iterations++;
 		}
-		System.out.println("Iterations: " + iterations);
-		String[][] best = bestBoard(boardList);
-		printBoard(best);
-		System.out.println("Score: " + this.calculateScore(best));
+		System.out.println("Generations: " + iterations);
+		this.finalScore = this.calculateScore(bestBoard(boardList));
+		this.board = bestBoard(boardList);
+		printStats();
 	}
 
 	/**
@@ -848,6 +857,9 @@ public class UrbanPlan {
 				}
 			}
 		}
+		childOne = mutate(childOne, babyOneInd, babyOneRes, babyOneCom);
+		childTwo = mutate(childTwo, babyTwoInd, babyTwoRes, babyTwoCom);
+
 		children.add(childOne);
 		children.add(childTwo);
 		return children;
@@ -886,5 +898,38 @@ public class UrbanPlan {
 			}
 		}
 		return competitors.get(maxIndex);
+	}
+
+	/**
+	 * Mutate a board
+	 * Returns board after it's been mutated
+	 */
+	public String[][] mutate(String[][] sickBoard, int babyInd, int babyRes, int babyCom) {
+		for(int i = 0; i < sickBoard.length; i++) {
+			for(int j = 0; j < sickBoard[i].length; j++) {
+				if(!sickBoard[i][j].equals("X")) {
+					Random rand = new Random();
+					int randNum = rand.nextInt(100);
+					if(randNum < 20) {
+						if(babyInd < this.numIndustrial) {
+							sickBoard[i][j] = "I";
+							babyInd++;
+						}
+						else if(babyRes < this.numResidential) {
+							sickBoard[i][j] = "R";
+							babyRes++;
+						}
+						else if(babyCom < this.numCommercial) {
+							sickBoard[i][j] = "C";
+							babyCom++;
+						}
+						else {
+							sickBoard[i][j] = this.board[i][j];
+						}
+					}
+				}
+			}
+		}
+		return sickBoard;
 	}
 }
