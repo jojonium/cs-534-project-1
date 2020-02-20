@@ -565,24 +565,35 @@ public class UrbanPlan {
 	 */
 	public void geneticAlgorithm() {
 		//k is number of boards we will generate, boardList is list of boards
-		int k = 4;
+		int k = 10;
 		ArrayList<String[][]> boardList = new ArrayList<>();
 
 		//generate k random boards and add to boardList
 		for(int i = 0; i < k; i++) {
 			String[][] generatedBoard = generateBoard();
 			boardList.add(generatedBoard);
-			printBoard(generatedBoard);
-			System.out.println();
 		}
 
 		//todo calculate scores of each board, shuffle list, and choose two parents
+		//Collections.shuffle(boardList);
+
+		//tournament style selection
+		//write helper function that takes in boardList population
+		ArrayList<String[][]> parents = chooseParents(boardList);
 
 		//take first two boards for now
-		String[][] firstBoard = boardList.get(0);
-		String[][] secondBoard = boardList.get(1);
-		String[][] combinedBoard = crossover(firstBoard, secondBoard);
-		printBoard(combinedBoard);
+		String[][] firstBoard = parents.get(0);
+		String[][] secondBoard = parents.get(1);
+		printBoard(firstBoard);
+		System.out.println();
+		printBoard(secondBoard);
+		System.out.println();
+
+		ArrayList<String[][]> children = crossover(firstBoard, secondBoard);
+		//String[][] combinedBoard = crossover(firstBoard, secondBoard);
+		printBoard(children.get(0));
+		System.out.println();
+		printBoard(children.get(1));
 	}
 
 	/**
@@ -646,11 +657,41 @@ public class UrbanPlan {
 	}
 
 	/**
+	 * Picks two parents from the generated boards
+	 * Returns a list of the two parents
+	 */
+	public ArrayList<String[][]> chooseParents(ArrayList<String[][]> boardList) {
+		ArrayList<String[][]> parentList = new ArrayList<>();
+		Collections.shuffle(boardList);
+		String[][] bestFirstHalf = boardList.get(0);
+		String[][] bestLastHalf = boardList.get(boardList.size() / 2);
+		int bestScore = this.calculateScore(bestFirstHalf);
+		for(int i = 0; i < boardList.size() / 2; i++) {
+			int currentScore = this.calculateScore(boardList.get(i));
+			if(currentScore > bestScore) {
+				bestScore = currentScore;
+				bestFirstHalf = boardList.get(i);
+			}
+		}
+		parentList.add(bestFirstHalf);
+		bestScore = this.calculateScore(bestLastHalf);
+		for(int i = boardList.size() / 2; i < boardList.size(); i++) {
+			int currentScore = this.calculateScore(boardList.get(i));
+			if(currentScore > bestScore) {
+				bestScore = currentScore;
+				bestLastHalf = boardList.get(i);
+			}
+		}
+		parentList.add(bestLastHalf);
+		return parentList;
+	}
+
+	/**
 	 * Combines first board and second board with crossover
 	 * Returns the combined board
 	 */
-	public String[][] crossover(String[][] boardOne, String[][] boardTwo) {
-		String[][] combined = new String[this.board.length][this.board[0].length];
+	public ArrayList<String[][]> crossover(String[][] boardOne, String[][] boardTwo) {
+		ArrayList<String[][]> children = new ArrayList<>();
 
 		//crossover is the cut in half and combine
 		//todo add in rules before adding (combined cannot exceed max items as well)
@@ -658,17 +699,154 @@ public class UrbanPlan {
 		int cutIndex = numColumns / 2;
 		System.out.println("Board length is " + this.board[0].length);
 		System.out.println("Cut index at " + cutIndex);
+
+		String[][] childOne = new String[this.board.length][this.board[0].length];
+		String[][] childTwo = new String[this.board.length][this.board[0].length];
+
+		int babyOneInd = 0;
+		int babyOneRes = 0;
+		int babyOneCom = 0;
+		int babyTwoInd = 0;
+		int babyTwoRes = 0;
+		int babyTwoCom = 0;
+
 		for(int i = 0; i < this.board.length; i++) {
 			for(int j = 0; j < this.board[i].length; j++) {
-				if(j < cutIndex) {
-					combined[i][j] = boardOne[i][j];
+				if(j < cutIndex) { //left half
+					//for baby one
+					if(boardOne[i][j].equals("I")) {
+						if(babyOneInd < this.numIndustrial) {
+							babyOneInd++;
+							childOne[i][j] = boardOne[i][j];
+						}
+						else {
+							childOne[i][j] = this.board[i][j];
+						}
+					}
+					else if(boardOne[i][j].equals("R")) {
+						if(babyOneRes < this.numResidential) {
+							babyOneRes++;
+							childOne[i][j] = boardOne[i][j];
+						}
+						else {
+							childOne[i][j] = this.board[i][j];
+						}
+					}
+					else if(boardOne[i][j].equals("C")) {
+						if(babyOneCom < this.numCommercial) {
+							babyOneCom++;
+							childOne[i][j] = boardOne[i][j];
+						}
+						else {
+							childOne[i][j] = this.board[i][j];
+						}
+					}
+					else {
+						childOne[i][j] = boardOne[i][j];
+					}
+
+					//for baby two
+					if(boardTwo[i][j].equals("I")) {
+						if(babyTwoInd < this.numIndustrial) {
+							babyTwoInd++;
+							childTwo[i][j] = boardTwo[i][j];
+						}
+						else {
+							childTwo[i][j] = this.board[i][j];
+						}
+					}
+					else if(boardTwo[i][j].equals("R")) {
+						if(babyTwoRes < this.numResidential) {
+							babyTwoRes++;
+							childTwo[i][j] = boardTwo[i][j];
+						}
+						else {
+							childTwo[i][j] = this.board[i][j];
+						}
+					}
+					else if(boardTwo[i][j].equals("C")) {
+						if(babyTwoCom < this.numCommercial) {
+							babyTwoCom++;
+							childTwo[i][j] = boardTwo[i][j];
+						}
+						else {
+							childTwo[i][j] = this.board[i][j];
+						}
+					}
+					else {
+						childTwo[i][j] = boardTwo[i][j];
+					}
 				}
-				else {
-					combined[i][j] = boardTwo[i][j];
+				else { //right half
+
+					//for baby one
+					if(boardTwo[i][j].equals("I")) {
+						if(babyOneInd < this.numIndustrial) {
+							babyOneInd++;
+							childOne[i][j] = boardTwo[i][j];
+						}
+						else {
+							childOne[i][j] = this.board[i][j];
+						}
+					}
+					else if(boardTwo[i][j].equals("R")) {
+						if(babyOneRes < this.numResidential) {
+							babyOneRes++;
+							childOne[i][j] = boardTwo[i][j];
+						}
+						else {
+							childOne[i][j] = this.board[i][j];
+						}
+					}
+					else if(boardTwo[i][j].equals("C")) {
+						if(babyOneCom < this.numCommercial) {
+							babyOneCom++;
+							childOne[i][j] = boardTwo[i][j];
+						}
+						else {
+							childOne[i][j] = this.board[i][j];
+						}
+					}
+					else {
+						childOne[i][j] = boardTwo[i][j];
+					}
+
+					//for baby two
+					if(boardOne[i][j].equals("I")) {
+						if(babyTwoInd < this.numIndustrial) {
+							babyTwoInd++;
+							childTwo[i][j] = boardOne[i][j];
+						}
+						else {
+							childTwo[i][j] = this.board[i][j];
+						}
+					}
+					else if(boardOne[i][j].equals("R")) {
+						if(babyTwoRes < this.numResidential) {
+							babyTwoRes++;
+							childTwo[i][j] = boardOne[i][j];
+						}
+						else {
+							childTwo[i][j] = this.board[i][j];
+						}
+					}
+					else if(boardOne[i][j].equals("C")) {
+						if(babyTwoCom < this.numCommercial) {
+							babyTwoCom++;
+							childTwo[i][j] = boardOne[i][j];
+						}
+						else {
+							childTwo[i][j] = this.board[i][j];
+						}
+					}
+					else {
+						childTwo[i][j] = boardOne[i][j];
+					}
 				}
 			}
 		}
-
-		return combined;
+		children.add(childOne);
+		children.add(childTwo);
+		return children;
 	}
 }
