@@ -576,10 +576,13 @@ public class UrbanPlan {
 			System.out.println();
 		}
 
-		//shuffle list and take first two for parents
-		//helper function for crossover
-		//crossover is the cut in half and combine (+rules of combining to make sure board is valid)
-		//
+		//todo calculate scores of each board, shuffle list, and choose two parents
+
+		//take first two boards for now
+		String[][] firstBoard = boardList.get(0);
+		String[][] secondBoard = boardList.get(1);
+		String[][] combinedBoard = crossover(firstBoard, secondBoard);
+		printBoard(combinedBoard);
 	}
 
 	/**
@@ -640,5 +643,32 @@ public class UrbanPlan {
 		}
 
 		return freeLocations;
+	}
+
+	/**
+	 * Combines first board and second board with crossover
+	 * Returns the combined board
+	 */
+	public String[][] crossover(String[][] boardOne, String[][] boardTwo) {
+		String[][] combined = new String[this.board.length][this.board[0].length];
+
+		//crossover is the cut in half and combine
+		//todo add in rules before adding (combined cannot exceed max items as well)
+		int numColumns = this.board[0].length;
+		int cutIndex = numColumns / 2;
+		System.out.println("Board length is " + this.board[0].length);
+		System.out.println("Cut index at " + cutIndex);
+		for(int i = 0; i < this.board.length; i++) {
+			for(int j = 0; j < this.board[i].length; j++) {
+				if(j < cutIndex) {
+					combined[i][j] = boardOne[i][j];
+				}
+				else {
+					combined[i][j] = boardTwo[i][j];
+				}
+			}
+		}
+
+		return combined;
 	}
 }
