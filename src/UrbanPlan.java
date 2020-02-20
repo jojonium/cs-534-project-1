@@ -162,6 +162,34 @@ public class UrbanPlan {
 	}
 	
 	/**
+	 * Calculates the annealing temperature
+	 * @param currentTime the current time
+	 * @param startTime the time the hill climbing started
+	 * @param totalTime the time limit
+	 * @return
+	 */
+	public int calculateTemperature(long currentTime, long startTime, double totalTime) {
+		int temp = 100;
+		long timeSpent = currentTime - startTime;
+		if(timeSpent > totalTime * 0.7) {
+			temp = 0;
+		}else if(timeSpent > totalTime * 0.6) {
+			temp = 5;
+		}else if(timeSpent > totalTime * 0.5) {
+			temp = 25;
+		}else if(timeSpent > totalTime * 0.4) {
+			temp = 50;
+		}else if(timeSpent > totalTime * 0.3) {
+			temp = 70;
+		}else if(timeSpent > totalTime * 0.2) {
+			temp = 85;
+		}else if(timeSpent > totalTime * 0.1) {
+			temp = 95;
+		}
+		return temp;
+	}
+	
+	/**
 	 * Calculates the best urban plan by using hill climbing
 	 * Updates the board
 	 */
@@ -187,13 +215,12 @@ public class UrbanPlan {
         boolean improvement = true;
         long startTime = System.currentTimeMillis();
         long currentTime = startTime;
+        double totalTime = 10000; //time limit of 10 seconds
         
         //loop through trials until we hit 10 seconds
-        while((currentTime - startTime < 10000)) {
-        	//annealing starts after 3 seconds to have lots of randomness to encourage placement
-        	if(temperature > 0 && numTrials % 1000 == 0 && currentTime-startTime>3000) {
-        		temperature-=10;
-        	}
+        while((currentTime - startTime < totalTime)) {
+        	//anneal
+        	temperature = calculateTemperature(currentTime, startTime, totalTime);
         	numTrials++;
         	
         	//set & reset all counters to their initial values
