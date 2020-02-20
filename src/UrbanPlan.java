@@ -574,11 +574,6 @@ public class UrbanPlan {
 			boardList.add(generatedBoard);
 		}
 
-		//todo calculate scores of each board, shuffle list, and choose two parents
-		//Collections.shuffle(boardList);
-
-		//tournament style selection
-		//write helper function that takes in boardList population
 		ArrayList<String[][]> parents = chooseParents(boardList);
 
 		//take first two boards for now
@@ -590,10 +585,16 @@ public class UrbanPlan {
 		System.out.println();
 
 		ArrayList<String[][]> children = crossover(firstBoard, secondBoard);
-		//String[][] combinedBoard = crossover(firstBoard, secondBoard);
 		printBoard(children.get(0));
 		System.out.println();
 		printBoard(children.get(1));
+
+		boardList.addAll(children);
+
+		//kill 2
+		boardList = this.kill(boardList);
+		boardList = this.kill(boardList);
+
 	}
 
 	/**
@@ -694,7 +695,6 @@ public class UrbanPlan {
 		ArrayList<String[][]> children = new ArrayList<>();
 
 		//crossover is the cut in half and combine
-		//todo add in rules before adding (combined cannot exceed max items as well)
 		int numColumns = this.board[0].length;
 		int cutIndex = numColumns / 2;
 		System.out.println("Board length is " + this.board[0].length);
@@ -848,5 +848,23 @@ public class UrbanPlan {
 		children.add(childOne);
 		children.add(childTwo);
 		return children;
+	}
+
+	/**
+	 * Kills lowest board
+	 * Returns original list without the lowest
+	 */
+	public ArrayList<String[][]> kill(ArrayList<String[][]> bigList) {
+		int minIndex = 0;
+		int minScore = this.calculateScore(bigList.get(0));
+		for(int i = 0; i < bigList.size(); i++) {
+			int currentScore = this.calculateScore(bigList.get(i));
+			if(currentScore < minScore) {
+				minIndex = i;
+				minScore = currentScore;
+			}
+		}
+		bigList.remove(minIndex);
+		return bigList;
 	}
 }
