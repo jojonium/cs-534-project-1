@@ -574,27 +574,32 @@ public class UrbanPlan {
 			boardList.add(generatedBoard);
 		}
 
-		ArrayList<String[][]> parents = chooseParents(boardList);
+		long startTime = System.currentTimeMillis();
+		long currentTime = startTime;
 
-		//take first two boards for now
-		String[][] firstBoard = parents.get(0);
-		String[][] secondBoard = parents.get(1);
-		printBoard(firstBoard);
-		System.out.println();
-		printBoard(secondBoard);
-		System.out.println();
+		int iterations = 0;
+		//loop through trials until we hit 10 seconds
+		while((currentTime - startTime < 10000)) {
+			ArrayList<String[][]> parents = chooseParents(boardList);
 
-		ArrayList<String[][]> children = crossover(firstBoard, secondBoard);
-		printBoard(children.get(0));
-		System.out.println();
-		printBoard(children.get(1));
+			//take first two boards for now
+			String[][] firstBoard = parents.get(0);
+			String[][] secondBoard = parents.get(1);
 
-		boardList.addAll(children);
+			ArrayList<String[][]> children = crossover(firstBoard, secondBoard);
+			boardList.addAll(children);
 
-		//kill 2
-		boardList = this.kill(boardList);
-		boardList = this.kill(boardList);
+			//kill 2
+			boardList = this.kill(boardList);
+			boardList = this.kill(boardList);
 
+			currentTime = System.currentTimeMillis();
+			iterations++;
+		}
+		System.out.println("Iterations: " + iterations);
+		String[][] best = bestBoard(boardList);
+		printBoard(best);
+		System.out.println("Score: " + this.calculateScore(best));
 	}
 
 	/**
@@ -697,8 +702,6 @@ public class UrbanPlan {
 		//crossover is the cut in half and combine
 		int numColumns = this.board[0].length;
 		int cutIndex = numColumns / 2;
-		System.out.println("Board length is " + this.board[0].length);
-		System.out.println("Cut index at " + cutIndex);
 
 		String[][] childOne = new String[this.board.length][this.board[0].length];
 		String[][] childTwo = new String[this.board.length][this.board[0].length];
@@ -866,5 +869,22 @@ public class UrbanPlan {
 		}
 		bigList.remove(minIndex);
 		return bigList;
+	}
+
+	/**
+	 * Finds board with highest score
+	 * Returns board with highest score
+	 */
+	public String[][] bestBoard(ArrayList<String[][]> competitors) {
+		int maxIndex = 0;
+		int maxScore = this.calculateScore(competitors.get(0));
+		for(int i = 0; i < competitors.size(); i++) {
+			int currentScore = this.calculateScore(competitors.get(i));
+			if(currentScore > maxScore) {
+				maxIndex = i;
+				maxScore = currentScore;
+			}
+		}
+		return competitors.get(maxIndex);
 	}
 }
