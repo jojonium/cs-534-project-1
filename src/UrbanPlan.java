@@ -559,68 +559,80 @@ public class UrbanPlan {
 		return new int[] {industrialUsed, commericalUsed, residentialUsed};
 	}
 
+	/**
+	 * Calculates the best urban plan by using genetic algorithm
+	 * Updates the board
+	 */
 	public void geneticAlgorithm() {
+		//k is number of boards we will generate, boardList is list of boards
 		int k = 4;
-		//list variable
-		ArrayList<String[][]> boardList = new ArrayList<String[][]>();
+		ArrayList<String[][]> boardList = new ArrayList<>();
 
-		//generate k random boards
+		//generate k random boards and add to boardList
 		for(int i = 0; i < k; i++) {
-			//generate board
-			boardList.add(generateBoard());
+			String[][] generatedBoard = generateBoard();
+			boardList.add(generatedBoard);
+			printBoard(generatedBoard);
 			System.out.println();
-			//add board to list
 		}
+
+		//shuffle list and take first two for parents
+		//helper function for crossover
+		//crossover is the cut in half and combine (+rules of combining to make sure board is valid)
+		//
 	}
 
+	/**
+	 * Generates a random board
+	 * Returns a board
+	 */
 	public String[][] generateBoard() {
-		String[][] boardToReturn = new String[this.board.length][this.board[0].length];
-		boardToReturn = copy2dArray(boardToReturn);
-		//generate 3 random numbers for number of I, C, R to place down
+		String[][] randBoard = new String[this.board.length][this.board[0].length];
 
+		//start with a copy of original board
+		randBoard = copy2dArray(randBoard);
+
+		//generate 3 random numbers for number of I, C, R to place down; upper bound should be max of item
 		Random rand = new Random();
 		int indRand = rand.nextInt(this.numIndustrial + 1);
 		int comRand = rand.nextInt(this.numCommercial + 1);
 		int resRand = rand.nextInt(this.numResidential + 1);
 
-		//given an array of all the available locations, shuffle it and take the first
-		//get available locations helper function
-
-		ArrayList<int[]> freeLocations = getAvailableLocations(boardToReturn);
+		//given an array of all the available locations, shuffle it
+		ArrayList<int[]> freeLocations = getFreeLocations(randBoard);
 		Collections.shuffle(freeLocations);
-
-		//for each loop (ind, com, res), take the next occurring thing on shuffled list and put that letter there
-
-
 		int count = 0;
+
+		//place I, R, C on map if conditions meet
 		for(int i = 0; i < indRand && freeLocations.size() > 0; i++) {
 			int[] coords = freeLocations.get(count);
 			count++;
-			boardToReturn[coords[0]][coords[1]] = "I";
+			randBoard[coords[0]][coords[1]] = "I";
 		}
 		for(int j = 0; j < resRand && freeLocations.size() > 0; j++) {
 			int[] coords = freeLocations.get(count);
 			count++;
-			boardToReturn[coords[0]][coords[1]] = "R";
+			randBoard[coords[0]][coords[1]] = "R";
 		}
 		for(int k = 0; k < comRand && freeLocations.size() > 0; k++) {
 			int[] coords = freeLocations.get(count);
 			count++;
-			boardToReturn[coords[0]][coords[1]] = "C";
+			randBoard[coords[0]][coords[1]] = "C";
 		}
 
-		printBoard(boardToReturn);
-
-		//if there is a S, place R, I, then C
-		//if no S, place I, R, C
-
-		return boardToReturn;
+		return randBoard;
 	}
 
-	public ArrayList<int[]> getAvailableLocations(String[][] tempBoard) {
-		ArrayList<int[]> freeLocations = new ArrayList<int[]>();
+	/**
+	 * Gets a list of available locations on a given board
+	 * Returns a list of available coordinates
+	 */
+	public ArrayList<int[]> getFreeLocations(String[][] tempBoard) {
+		ArrayList<int[]> freeLocations = new ArrayList<>();
 		for(int i = 0; i < tempBoard.length; i++) {
 			for(int j = 0 ; j < tempBoard[i].length; j++) {
+
+				//if current location is not X, add location as free
 				if(!tempBoard[i][j].equals("X")) {
 					freeLocations.add(new int[]{i, j});
 				}
