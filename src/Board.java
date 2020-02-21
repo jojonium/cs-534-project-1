@@ -188,8 +188,8 @@ public class Board {
 
         int[] queen_positions = this.getQueenPositions();
         int N = this.getN();
-        int lowest_total_cost; // keeps track of lowest heuristic value
         String best_board; // keeps track of our best board
+        int lowest_total_cost = Integer.MAX_VALUE; // keeps track of our lowest solution cost
         int nodes_expanded = 0; // keeps track of how many nodes we have expanded
 
         // keeps track of how much time has elapsed since we started
@@ -209,7 +209,6 @@ public class Board {
 
         // initialize the mapping with the initial board and h value
         h_map.put(this.board_to_string(queen_positions), h);
-        lowest_total_cost = h;
         best_board = this.board_to_string(queen_positions);
 
         // create a priority queue to keep track of which boards are the most promising
@@ -234,13 +233,6 @@ public class Board {
 
             // increment the number of expanded nodes
             nodes_expanded += 1;
-
-            // if h value is 0, we win
-            if(h_to_use == 1) {
-                if (this.h1(new_positions) == 0) break;
-            } else {
-                if (this.h2(new_positions) == 0) break;
-            }
 
             // consider all possible board moves and add to queue
             for (int i = 0; i < N; i++) {
@@ -270,9 +262,12 @@ public class Board {
                             queue.add(new AbstractMap.SimpleEntry<>(board_string, new_h));
                         }
 
+                        // calculate the total cost of movement
+                        int new_total_cost = this.calculate_movement_cost(temp_positions, queen_positions);
+
                         // store best board we have
-                        if (new_h < lowest_total_cost) {
-                            lowest_total_cost = new_h;
+                        if (new_h == 0 && new_total_cost < lowest_total_cost) {
+                            lowest_total_cost = new_total_cost;
                             best_board = this.board_to_string(temp_positions);
                         }
                     }
@@ -538,7 +533,7 @@ public class Board {
             System.out.println("Final heuristic value of board: " + this.h2(final_positions));
         }
         System.out.println("Number of nodes expanded: " + nodes_expanded);
-        System.out.println("Total time elapsed before finding a solution (milliseconds): " + time_elapsed);
+        System.out.println("Time at which best solution was found: " + time_elapsed);
         int search_depth = this.calculate_search_depth(final_positions, original_positions);
         System.out.println("Minimum search depth of tree: " + search_depth);
         if (search_depth > 0) System.out.println("Effective branching factor: " + (nodes_expanded / search_depth));
