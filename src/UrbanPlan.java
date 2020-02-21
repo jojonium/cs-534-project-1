@@ -16,6 +16,7 @@ public class UrbanPlan {
 	
 	private int finalScore;
 	private long finalTime;
+	private String[][] finalBoard;
 	
 	private String[][] board;//rest of input
 	
@@ -63,6 +64,7 @@ public class UrbanPlan {
 		this.numCommercial = numC;
 		this.numResidential = numR;
 		this.board = board;
+		this.finalBoard = board;
 	}
 	
 	/**
@@ -564,8 +566,11 @@ public class UrbanPlan {
 	 * Updates the board
 	 */
 	public void geneticAlgorithm() {
-		//k is number of boards we will generate, boardList is list of boards
-		int k = 10;
+		// number of boards we will generate
+		int k = 100;
+		// what percentage of all generated boards are considered elites. The
+		// number of elites (k * elitePercent) should always be even
+		double elitePercent = 0.1;
 		ArrayList<String[][]> boardList = new ArrayList<>();
 
 		//generate k random boards and add to boardList
@@ -577,31 +582,43 @@ public class UrbanPlan {
 		long startTime = System.currentTimeMillis();
 		long currentTime = startTime;
 		this.finalTime = startTime;
-		this.finalScore = calculateScore(this.bestBoard(boardList));
+		this.finalScore = calculateScore(this.finalBoard);
 
 		int iterations = 0;
 		//loop through trials until we hit 10 seconds
 		while((currentTime - startTime < 10000)) {
-			ArrayList<String[][]> parents = chooseParents(boardList);
+			int childrenToMake = (int)(k * elitePercent);
+			// the first half of this list is the elites, the second half is the
+			// losers, who are removed from the next generation
+			ArrayList<String[][]> both = chooseElites(boardList, childrenToMake);
+			List<String[][]> elites = both.subList(0, both.size() / 2);
+			// remove losers and elites from boardList. The ones that remain are
+			// the "middle class" that get replaced by their children
+			boardList.removeAll(both);
 
-			//take first two boards for now
-			String[][] firstBoard = parents.get(0);
-			String[][] secondBoard = parents.get(1);
+			ArrayList<String[][]> nextGen = new ArrayList<String[][]>();
+			for (int i = 0; i < elites.size(); i += 2) {
+				// the children of elites survive to the next generation
+				nextGen.addAll(crossover(elites.get(i), elites.get(i + 1)));
+			}
+			// elites themselves also survive
+			nextGen.addAll(elites);
 
-			ArrayList<String[][]> children = crossover(firstBoard, secondBoard);
-			for(String[][] child : children) {
-				int babyScore = this.calculateScore(child);
-				if(babyScore > this.finalScore) {
-					this.finalScore = babyScore;
+			for (int i = 0; i < boardList.size(); i += 2) {
+				// the children of the middle class survive to the next gen
+				nextGen.addAll(crossover(boardList.get(i), boardList.get(i + 1)));
+			}
+
+			// check to see if we've found a new best board
+			for (String[][] board : nextGen) {
+				int curScore = this.calculateScore(board);
+				if (curScore > this.finalScore) {
+					this.finalScore = curScore;
 					this.finalTime = System.currentTimeMillis() - startTime;
 				}
 			}
-			boardList.addAll(children);
 
-			//kill 2
-			boardList = this.kill(boardList);
-			boardList = this.kill(boardList);
-
+			boardList = nextGen;
 			currentTime = System.currentTimeMillis();
 			iterations++;
 		}
@@ -672,33 +689,41 @@ public class UrbanPlan {
 	}
 
 	/**
-	 * Picks two parents from the generated boards
-	 * Returns a list of the two parents
+	 * Picks n best and n worst boards from the generated boards using a
+	 * tournament algorithm
+	 * @param boardList the list of boards to choose from
+	 * @param n the number of elites to choose
+	 * @return a list of the n best boards followed by the n worst boards
 	 */
-	public ArrayList<String[][]> chooseParents(ArrayList<String[][]> boardList) {
-		ArrayList<String[][]> parentList = new ArrayList<>();
+	public ArrayList<String[][]> chooseElites(ArrayList<String[][]> boardList, int n) {
+		ArrayList<String[][]> eliteList = new ArrayList<>();
+		ArrayList<String[][]> loserList = new ArrayList<>();
 		Collections.shuffle(boardList);
-		String[][] bestFirstHalf = boardList.get(0);
-		String[][] bestLastHalf = boardList.get(boardList.size() / 2);
-		int bestScore = this.calculateScore(bestFirstHalf);
-		for(int i = 0; i < boardList.size() / 2; i++) {
-			int currentScore = this.calculateScore(boardList.get(i));
-			if(currentScore > bestScore) {
-				bestScore = currentScore;
-				bestFirstHalf = boardList.get(i);
+		// split boardList into n equal-size chunks
+		for (int i = 0; i < n; ++i) {
+			List<String[][]> chunk =
+				boardList.subList(i * boardList.size() / n, (i + 1) * boardList.size() / n);
+			// find the best (or worst) board in this chunk
+			int bestScore = Integer.MIN_VALUE;
+			int worstScore = Integer.MAX_VALUE;
+			String[][] winner = null;
+			String[][] loser = null;
+			for (String[][] board : chunk) {
+				int currentScore = this.calculateScore(board);
+				if (currentScore > bestScore) {
+					bestScore = currentScore;
+					winner = board;
+				}
+				if (currentScore < worstScore) {
+					worstScore = currentScore;
+					loser = board;
+				}
 			}
+			eliteList.add(winner);
+			loserList.add(loser);
 		}
-		parentList.add(bestFirstHalf);
-		bestScore = this.calculateScore(bestLastHalf);
-		for(int i = boardList.size() / 2; i < boardList.size(); i++) {
-			int currentScore = this.calculateScore(boardList.get(i));
-			if(currentScore > bestScore) {
-				bestScore = currentScore;
-				bestLastHalf = boardList.get(i);
-			}
-		}
-		parentList.add(bestLastHalf);
-		return parentList;
+		eliteList.addAll(loserList);
+		return eliteList;
 	}
 
 	/**
