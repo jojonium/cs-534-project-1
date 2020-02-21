@@ -585,9 +585,9 @@ public class UrbanPlan {
 		this.finalScore = calculateScore(this.finalBoard);
 
 		int iterations = 0;
+		int childrenToMake = (int)(k * elitePercent);
 		//loop through trials until we hit 10 seconds
 		while((currentTime - startTime < 10000)) {
-			int childrenToMake = (int)(k * elitePercent);
 			// the first half of this list is the elites, the second half is the
 			// losers, who are removed from the next generation
 			ArrayList<String[][]> both = chooseElites(boardList, childrenToMake);
@@ -615,6 +615,7 @@ public class UrbanPlan {
 				if (curScore > this.finalScore) {
 					this.finalScore = curScore;
 					this.finalTime = System.currentTimeMillis() - startTime;
+					this.finalBoard = board;
 				}
 			}
 
@@ -623,8 +624,7 @@ public class UrbanPlan {
 			iterations++;
 		}
 		System.out.println("Generations: " + iterations);
-		this.finalScore = this.calculateScore(bestBoard(boardList));
-		this.board = bestBoard(boardList);
+		this.board = this.finalBoard;
 		printStats();
 	}
 
@@ -888,41 +888,6 @@ public class UrbanPlan {
 		children.add(childOne);
 		children.add(childTwo);
 		return children;
-	}
-
-	/**
-	 * Kills lowest board
-	 * Returns original list without the lowest
-	 */
-	public ArrayList<String[][]> kill(ArrayList<String[][]> bigList) {
-		int minIndex = 0;
-		int minScore = this.calculateScore(bigList.get(0));
-		for(int i = 0; i < bigList.size(); i++) {
-			int currentScore = this.calculateScore(bigList.get(i));
-			if(currentScore < minScore) {
-				minIndex = i;
-				minScore = currentScore;
-			}
-		}
-		bigList.remove(minIndex);
-		return bigList;
-	}
-
-	/**
-	 * Finds board with highest score
-	 * Returns board with highest score
-	 */
-	public String[][] bestBoard(ArrayList<String[][]> competitors) {
-		int maxIndex = 0;
-		int maxScore = this.calculateScore(competitors.get(0));
-		for(int i = 0; i < competitors.size(); i++) {
-			int currentScore = this.calculateScore(competitors.get(i));
-			if(currentScore > maxScore) {
-				maxIndex = i;
-				maxScore = currentScore;
-			}
-		}
-		return competitors.get(maxIndex);
 	}
 
 	/**
