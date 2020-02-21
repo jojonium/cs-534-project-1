@@ -4,6 +4,8 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 
 public class UrbanPlan {
@@ -14,6 +16,7 @@ public class UrbanPlan {
 	
 	private int finalScore;
 	private long finalTime;
+	private String[][] finalBoard;
 	
 	private String[][] board;//rest of input
 	
@@ -61,6 +64,7 @@ public class UrbanPlan {
 		this.numCommercial = numC;
 		this.numResidential = numR;
 		this.board = board;
+		this.finalBoard = board;
 	}
 	
 	/**
@@ -113,7 +117,7 @@ public class UrbanPlan {
 		if(args[1].equals("HC")) {
 			up.hillClimb();
 		}else if(args[1].equals("GA")){
-			//todo: genetic algorithm
+			up.geneticAlgorithm();
 		}else {
 			System.out.println("please input an algorithm argument (GA, or HC)\nThe format for input is ./UrbanPlan [filename] [algorithm]");
 		}
@@ -533,8 +537,8 @@ public class UrbanPlan {
 		System.out.println();
 		System.out.println("Optimal Urban Plan:");
 		printBoard();
-		System.out.println("Final Score: " + this.finalScore);
-		System.out.println("Time to find Solution: " + this.finalTime + " milliseconds, (" + (double)this.finalTime/1000 + " seconds).");
+		System.out.println("Best Score: " + this.finalScore);
+		System.out.println("Time at which best score was achieved: " + this.finalTime + " milliseconds, (" + (double)this.finalTime/1000 + " seconds).");
 		int[] usage = countUsage();
 		System.out.println("This solution used " + usage[0] + " out of " + this.numIndustrial + " possible industrial areas.");
 		System.out.println("This solution used " + usage[1] + " out of " + this.numCommercial + " possible commercial areas.");
@@ -582,5 +586,367 @@ public class UrbanPlan {
 			}
 		}
 		return new int[] {industrialUsed, commericalUsed, residentialUsed};
+	}
+
+	/**
+	 * Calculates the best urban plan by using genetic algorithm
+	 * Updates the board
+	 */
+	public void geneticAlgorithm() {
+		// number of boards we will generate
+		int k = 100;
+		// what percentage of all generated boards are considered elites. The
+		// number of elites (k * elitePercent) should always be even
+		double elitePercent = 0.1;
+		ArrayList<String[][]> boardList = new ArrayList<>();
+
+		//generate k random boards and add to boardList
+		for(int i = 0; i < k; i++) {
+			String[][] generatedBoard = generateBoard();
+			boardList.add(generatedBoard);
+		}
+
+		long startTime = System.currentTimeMillis();
+		long currentTime = startTime;
+		this.finalTime = startTime;
+		this.finalScore = calculateScore(this.finalBoard);
+
+		int iterations = 0;
+		int childrenToMake = (int)(k * elitePercent);
+		//loop through trials until we hit 10 seconds
+		while((currentTime - startTime < 10000)) {
+			// the first half of this list is the elites, the second half is the
+			// losers, who are removed from the next generation
+			ArrayList<String[][]> both = chooseElites(boardList, childrenToMake);
+			List<String[][]> elites = both.subList(0, both.size() / 2);
+			// remove losers and elites from boardList. The ones that remain are
+			// the "middle class" that get replaced by their children
+			boardList.removeAll(both);
+
+			ArrayList<String[][]> nextGen = new ArrayList<String[][]>();
+			for (int i = 0; i < elites.size(); i += 2) {
+				// the children of elites survive to the next generation
+				nextGen.addAll(crossover(elites.get(i), elites.get(i + 1)));
+			}
+			// elites themselves also survive
+			nextGen.addAll(elites);
+
+			for (int i = 0; i < boardList.size(); i += 2) {
+				// the children of the middle class survive to the next gen
+				nextGen.addAll(crossover(boardList.get(i), boardList.get(i + 1)));
+			}
+
+			// check to see if we've found a new best board
+			for (String[][] board : nextGen) {
+				int curScore = this.calculateScore(board);
+				if (curScore > this.finalScore) {
+					this.finalScore = curScore;
+					this.finalTime = System.currentTimeMillis() - startTime;
+					this.finalBoard = board;
+				}
+			}
+
+			boardList = nextGen;
+			currentTime = System.currentTimeMillis();
+			iterations++;
+		}
+		System.out.println("Generations: " + iterations);
+		this.board = this.finalBoard;
+		printStats();
+	}
+
+	/**
+	 * Generates a random board
+	 * Returns a board
+	 */
+	public String[][] generateBoard() {
+		String[][] randBoard = new String[this.board.length][this.board[0].length];
+
+		//start with a copy of original board
+		randBoard = copy2dArray(randBoard);
+
+		//generate 3 random numbers for number of I, C, R to place down; upper bound should be max of item
+		Random rand = new Random();
+		int indRand = rand.nextInt(this.numIndustrial + 1);
+		int comRand = rand.nextInt(this.numCommercial + 1);
+		int resRand = rand.nextInt(this.numResidential + 1);
+
+		//given an array of all the available locations, shuffle it
+		ArrayList<int[]> freeLocations = getFreeLocations(randBoard);
+		Collections.shuffle(freeLocations);
+		int count = 0;
+
+		//place I, R, C on map if conditions meet
+		for(int i = 0; i < indRand && freeLocations.size() > 0; i++) {
+			int[] coords = freeLocations.get(count);
+			count++;
+			randBoard[coords[0]][coords[1]] = "I";
+		}
+		for(int j = 0; j < resRand && freeLocations.size() > 0; j++) {
+			int[] coords = freeLocations.get(count);
+			count++;
+			randBoard[coords[0]][coords[1]] = "R";
+		}
+		for(int k = 0; k < comRand && freeLocations.size() > 0; k++) {
+			int[] coords = freeLocations.get(count);
+			count++;
+			randBoard[coords[0]][coords[1]] = "C";
+		}
+
+		return randBoard;
+	}
+
+	/**
+	 * Gets a list of available locations on a given board
+	 * Returns a list of available coordinates
+	 */
+	public ArrayList<int[]> getFreeLocations(String[][] tempBoard) {
+		ArrayList<int[]> freeLocations = new ArrayList<>();
+		for(int i = 0; i < tempBoard.length; i++) {
+			for(int j = 0 ; j < tempBoard[i].length; j++) {
+
+				//if current location is not X, add location as free
+				if(!tempBoard[i][j].equals("X")) {
+					freeLocations.add(new int[]{i, j});
+				}
+			}
+		}
+
+		return freeLocations;
+	}
+
+	/**
+	 * Picks n best and n worst boards from the generated boards using a
+	 * tournament algorithm
+	 * @param boardList the list of boards to choose from
+	 * @param n the number of elites to choose
+	 * @return a list of the n best boards followed by the n worst boards
+	 */
+	public ArrayList<String[][]> chooseElites(ArrayList<String[][]> boardList, int n) {
+		ArrayList<String[][]> eliteList = new ArrayList<>();
+		ArrayList<String[][]> loserList = new ArrayList<>();
+		Collections.shuffle(boardList);
+		// split boardList into n equal-size chunks
+		for (int i = 0; i < n; ++i) {
+			List<String[][]> chunk =
+				boardList.subList(i * boardList.size() / n, (i + 1) * boardList.size() / n);
+			// find the best (or worst) board in this chunk
+			int bestScore = Integer.MIN_VALUE;
+			int worstScore = Integer.MAX_VALUE;
+			String[][] winner = null;
+			String[][] loser = null;
+			for (String[][] board : chunk) {
+				int currentScore = this.calculateScore(board);
+				if (currentScore > bestScore) {
+					bestScore = currentScore;
+					winner = board;
+				}
+				if (currentScore < worstScore) {
+					worstScore = currentScore;
+					loser = board;
+				}
+			}
+			eliteList.add(winner);
+			loserList.add(loser);
+		}
+		eliteList.addAll(loserList);
+		return eliteList;
+	}
+
+	/**
+	 * Combines first board and second board with crossover
+	 * Returns the combined board
+	 */
+	public ArrayList<String[][]> crossover(String[][] boardOne, String[][] boardTwo) {
+		ArrayList<String[][]> children = new ArrayList<>();
+
+		//crossover is the cut in half and combine
+		int numColumns = this.board[0].length;
+		int cutIndex = numColumns / 2;
+
+		String[][] childOne = new String[this.board.length][this.board[0].length];
+		String[][] childTwo = new String[this.board.length][this.board[0].length];
+
+		int babyOneInd = 0;
+		int babyOneRes = 0;
+		int babyOneCom = 0;
+		int babyTwoInd = 0;
+		int babyTwoRes = 0;
+		int babyTwoCom = 0;
+
+		for(int i = 0; i < this.board.length; i++) {
+			for(int j = 0; j < this.board[i].length; j++) {
+				if(j < cutIndex) { //left half
+					//for baby one
+					if(boardOne[i][j].equals("I")) {
+						if(babyOneInd < this.numIndustrial) {
+							babyOneInd++;
+							childOne[i][j] = boardOne[i][j];
+						}
+						else {
+							childOne[i][j] = this.board[i][j];
+						}
+					}
+					else if(boardOne[i][j].equals("R")) {
+						if(babyOneRes < this.numResidential) {
+							babyOneRes++;
+							childOne[i][j] = boardOne[i][j];
+						}
+						else {
+							childOne[i][j] = this.board[i][j];
+						}
+					}
+					else if(boardOne[i][j].equals("C")) {
+						if(babyOneCom < this.numCommercial) {
+							babyOneCom++;
+							childOne[i][j] = boardOne[i][j];
+						}
+						else {
+							childOne[i][j] = this.board[i][j];
+						}
+					}
+					else {
+						childOne[i][j] = boardOne[i][j];
+					}
+
+					//for baby two
+					if(boardTwo[i][j].equals("I")) {
+						if(babyTwoInd < this.numIndustrial) {
+							babyTwoInd++;
+							childTwo[i][j] = boardTwo[i][j];
+						}
+						else {
+							childTwo[i][j] = this.board[i][j];
+						}
+					}
+					else if(boardTwo[i][j].equals("R")) {
+						if(babyTwoRes < this.numResidential) {
+							babyTwoRes++;
+							childTwo[i][j] = boardTwo[i][j];
+						}
+						else {
+							childTwo[i][j] = this.board[i][j];
+						}
+					}
+					else if(boardTwo[i][j].equals("C")) {
+						if(babyTwoCom < this.numCommercial) {
+							babyTwoCom++;
+							childTwo[i][j] = boardTwo[i][j];
+						}
+						else {
+							childTwo[i][j] = this.board[i][j];
+						}
+					}
+					else {
+						childTwo[i][j] = boardTwo[i][j];
+					}
+				}
+				else { //right half
+
+					//for baby one
+					if(boardTwo[i][j].equals("I")) {
+						if(babyOneInd < this.numIndustrial) {
+							babyOneInd++;
+							childOne[i][j] = boardTwo[i][j];
+						}
+						else {
+							childOne[i][j] = this.board[i][j];
+						}
+					}
+					else if(boardTwo[i][j].equals("R")) {
+						if(babyOneRes < this.numResidential) {
+							babyOneRes++;
+							childOne[i][j] = boardTwo[i][j];
+						}
+						else {
+							childOne[i][j] = this.board[i][j];
+						}
+					}
+					else if(boardTwo[i][j].equals("C")) {
+						if(babyOneCom < this.numCommercial) {
+							babyOneCom++;
+							childOne[i][j] = boardTwo[i][j];
+						}
+						else {
+							childOne[i][j] = this.board[i][j];
+						}
+					}
+					else {
+						childOne[i][j] = boardTwo[i][j];
+					}
+
+					//for baby two
+					if(boardOne[i][j].equals("I")) {
+						if(babyTwoInd < this.numIndustrial) {
+							babyTwoInd++;
+							childTwo[i][j] = boardOne[i][j];
+						}
+						else {
+							childTwo[i][j] = this.board[i][j];
+						}
+					}
+					else if(boardOne[i][j].equals("R")) {
+						if(babyTwoRes < this.numResidential) {
+							babyTwoRes++;
+							childTwo[i][j] = boardOne[i][j];
+						}
+						else {
+							childTwo[i][j] = this.board[i][j];
+						}
+					}
+					else if(boardOne[i][j].equals("C")) {
+						if(babyTwoCom < this.numCommercial) {
+							babyTwoCom++;
+							childTwo[i][j] = boardOne[i][j];
+						}
+						else {
+							childTwo[i][j] = this.board[i][j];
+						}
+					}
+					else {
+						childTwo[i][j] = boardOne[i][j];
+					}
+				}
+			}
+		}
+		childOne = mutate(childOne, babyOneInd, babyOneRes, babyOneCom);
+		childTwo = mutate(childTwo, babyTwoInd, babyTwoRes, babyTwoCom);
+
+		children.add(childOne);
+		children.add(childTwo);
+		return children;
+	}
+
+	/**
+	 * Mutate a board
+	 * Returns board after it's been mutated
+	 */
+	public String[][] mutate(String[][] sickBoard, int babyInd, int babyRes, int babyCom) {
+		for(int i = 0; i < sickBoard.length; i++) {
+			for(int j = 0; j < sickBoard[i].length; j++) {
+				if(!sickBoard[i][j].equals("X")) {
+					Random rand = new Random();
+					int randNum = rand.nextInt(100);
+					if(randNum < 20) {
+						if(babyInd < this.numIndustrial) {
+							sickBoard[i][j] = "I";
+							babyInd++;
+						}
+						else if(babyRes < this.numResidential) {
+							sickBoard[i][j] = "R";
+							babyRes++;
+						}
+						else if(babyCom < this.numCommercial) {
+							sickBoard[i][j] = "C";
+							babyCom++;
+						}
+						else {
+							sickBoard[i][j] = this.board[i][j];
+						}
+					}
+				}
+			}
+		}
+		return sickBoard;
 	}
 }
