@@ -74,6 +74,7 @@ public class UrbanPlan {
 	public static void main(String[] args) {
 		if(args.length != 2) {
 			System.out.println("Invalid number of arguments");
+			showUsage();
 			System.exit(1);
 			return;
 		}
@@ -111,6 +112,7 @@ public class UrbanPlan {
 		} catch (Exception e) {
 			// got an error while trying to read the file
 			System.err.println(e.toString());
+			showUsage();
 			System.exit(1);
 			return;
 		}
@@ -124,6 +126,7 @@ public class UrbanPlan {
 		}else if(args[1].equals("GA")){
 			up.geneticAlgorithm();
 		}else {
+			showUsage();
 			System.out.println("please input an algorithm argument (GA, or HC)\nThe format for input is ./UrbanPlan [filename] [algorithm]");
 		}
 	}
