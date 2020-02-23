@@ -192,8 +192,9 @@ public class Board {
         int lowest_total_cost = Integer.MAX_VALUE; // keeps track of our lowest solution cost
         int nodes_expanded = 0; // keeps track of how many nodes we have expanded
 
-        // keeps track of how much time has elapsed since we started
+        // keeps track of when we started and when we found our best solution
         long startTime = System.currentTimeMillis();
+        long bestTime = startTime;
 
         // calculate original heuristic of the board based on which one we are using
         int h;
@@ -255,20 +256,32 @@ public class Board {
                             new_h = this.h2(temp_positions);
                         }
 
-                        // add these values to hash map and queue if they don't exist yet
-                        String board_string = this.board_to_string(temp_positions);
-                        if(!h_map.containsKey(board_string)) {
-                            h_map.put(board_string, new_h);
-                            queue.add(new AbstractMap.SimpleEntry<>(board_string, new_h));
-                        }
-
                         // calculate the total cost of movement
                         int new_total_cost = this.calculate_movement_cost(temp_positions, queen_positions);
+
+                        // adding a new board config to the queue depends on whether we've found a valid solution yet
+                        if (new_h == 0) {
+                            String board_string = this.board_to_string(temp_positions);
+                            if(!h_map.containsKey(board_string)) {
+                                h_map.put(board_string, new_h);
+                                queue.add(new AbstractMap.SimpleEntry<>(board_string, new_h));
+                            }
+                        } else {
+                            // only add if the total cost is less than the lowest total cost
+                            if (new_total_cost < lowest_total_cost) {
+                                String board_string = this.board_to_string(temp_positions);
+                                if(!h_map.containsKey(board_string)) {
+                                    h_map.put(board_string, new_h);
+                                    queue.add(new AbstractMap.SimpleEntry<>(board_string, new_h));
+                                }
+                            }
+                        }
 
                         // store best board we have
                         if (new_h == 0 && new_total_cost < lowest_total_cost) {
                             lowest_total_cost = new_total_cost;
                             best_board = this.board_to_string(temp_positions);
+                            bestTime = System.currentTimeMillis();
                         }
                     }
                 }
@@ -276,11 +289,10 @@ public class Board {
         }
 
         // at the end, print final board and statistics
-        long endTime = System.currentTimeMillis();
         System.out.println("Final board configuration:");
         int[] best_board_positions = this.string_to_board(best_board);
         this.printBoard(best_board_positions);
-        this.print_statistics(startTime, endTime, best_board_positions, queen_positions, h_to_use, nodes_expanded);
+        this.print_statistics(startTime, bestTime, best_board_positions, queen_positions, h_to_use, nodes_expanded);
 
     }
 
@@ -304,6 +316,10 @@ public class Board {
         int total_sideways_moves = 5; // keeps track of how many sideways moves are available at each iteration
         int sideways_moves_left = 5; // tells us how many sideways moves we have remaining
 
+        // create a mapping of board string representations
+        // Example: "10230" represents [1, 0, 2, 3, 0] for each queen's row position on the board (index = column)
+        Map<String,String> visited = new HashMap<>();
+
         // create a clone of the queen positions for each new piece
         int[] original_positions = new int[queen_length];
         System.arraycopy(queen_positions, 0, original_positions, 0, queen_length);
@@ -325,8 +341,12 @@ public class Board {
             long currentTime = System.currentTimeMillis();
             if ( (currentTime - startTime) > 10000) break;
 
-            // increment the number of nodes expanded
-            nodes_expanded += 1;
+            // increment the number of nodes expanded if we haven't visited it yet
+            String board_string = this.board_to_string(queen_positions);
+            if(!visited.containsKey(board_string)) {
+                visited.put(board_string, board_string);
+                nodes_expanded += 1;
+            }
 
             // calculate heuristic of the board based on which one we are using
             if (h_to_use == 1) {
@@ -353,7 +373,7 @@ public class Board {
                     if (j != queen_positions[index]) {
                         temp_positions = this.move_queen(index, j, temp_positions);
 
-                        // move the queen that produces the lowest heuristic value
+                        // calculate the heuristic of the possible move
                         int new_h;
                         if (h_to_use == 1) {
                             new_h = this.h1(temp_positions);
