@@ -72,6 +72,12 @@ public class UrbanPlan {
 	 * @param args
 	 */
 	public static void main(String[] args) {
+		if(args.length != 2) {
+			System.out.println("Invalid number of arguments");
+			showUsage();
+			System.exit(1);
+			return;
+		}
 		UrbanPlan up;
 		
 		//parses input
@@ -106,6 +112,7 @@ public class UrbanPlan {
 		} catch (Exception e) {
 			// got an error while trying to read the file
 			System.err.println(e.toString());
+			showUsage();
 			System.exit(1);
 			return;
 		}
@@ -119,6 +126,7 @@ public class UrbanPlan {
 		}else if(args[1].equals("GA")){
 			up.geneticAlgorithm();
 		}else {
+			showUsage();
 			System.out.println("please input an algorithm argument (GA, or HC)\nThe format for input is ./UrbanPlan [filename] [algorithm]");
 		}
 	}
@@ -948,5 +956,14 @@ public class UrbanPlan {
 			}
 		}
 		return sickBoard;
+	}
+
+	private static void showUsage() {
+		System.out.println("Usage:");
+		System.out.println("\tjava UrbanPlan board algorithm");
+		System.out.println("board: path to TXT board file");
+		System.out.println("algorithm: HC for hill climbing, GA for genetic algorithm");
+		System.out.println("Example:");
+		System.out.println("\tjava UrbanPlan urban1.txt HC");
 	}
 }
