@@ -3,7 +3,7 @@ How to Run Urban Planning
 ===============================
 Our program is using Java, make sure you have Java installed.
 
-If using Linux:
+If you have make installed:
 	1) Run our Makefile
 	   > make
 	2) Run the program
