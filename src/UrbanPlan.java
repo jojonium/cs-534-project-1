@@ -72,6 +72,11 @@ public class UrbanPlan {
 	 * @param args
 	 */
 	public static void main(String[] args) {
+		if(args.length != 2) {
+			System.out.println("Invalid number of arguments");
+			System.exit(1);
+			return;
+		}
 		UrbanPlan up;
 		
 		//parses input
@@ -614,7 +619,7 @@ public class UrbanPlan {
 		int iterations = 0;
 		int childrenToMake = (int)(k * elitePercent);
 		//loop through trials until we hit 10 seconds
-		while((currentTime - startTime < 10000)) {
+		while((currentTime - startTime < 1000)) {
 			// the first half of this list is the elites, the second half is the
 			// losers, who are removed from the next generation
 			ArrayList<String[][]> both = chooseElites(boardList, childrenToMake);
@@ -927,7 +932,7 @@ public class UrbanPlan {
 				if(!sickBoard[i][j].equals("X")) {
 					Random rand = new Random();
 					int randNum = rand.nextInt(100);
-					if(randNum < 20) {
+					if(randNum < 10) {
 						if(babyInd < this.numIndustrial) {
 							sickBoard[i][j] = "I";
 							babyInd++;
