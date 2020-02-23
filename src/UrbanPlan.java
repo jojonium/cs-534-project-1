@@ -619,7 +619,7 @@ public class UrbanPlan {
 		int iterations = 0;
 		int childrenToMake = (int)(k * elitePercent);
 		//loop through trials until we hit 10 seconds
-		while((currentTime - startTime < 1000)) {
+		while((currentTime - startTime < 10000)) {
 			// the first half of this list is the elites, the second half is the
 			// losers, who are removed from the next generation
 			ArrayList<String[][]> both = chooseElites(boardList, childrenToMake);
@@ -932,7 +932,7 @@ public class UrbanPlan {
 				if(!sickBoard[i][j].equals("X")) {
 					Random rand = new Random();
 					int randNum = rand.nextInt(100);
-					if(randNum < 10) {
+					if(randNum < 20) {
 						if(babyInd < this.numIndustrial) {
 							sickBoard[i][j] = "I";
 							babyInd++;
@@ -953,5 +953,14 @@ public class UrbanPlan {
 			}
 		}
 		return sickBoard;
+	}
+
+	private static void showUsage() {
+		System.out.println("Usage:");
+		System.out.println("\tjava UrbanPlan board algorithm");
+		System.out.println("board: path to TXT board file");
+		System.out.println("algorithm: HC for hill climbing, GA for genetic algorithm");
+		System.out.println("Example:");
+		System.out.println("\tjava UrbanPlan urban1.txt HC");
 	}
 }

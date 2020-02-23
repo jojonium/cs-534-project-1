@@ -115,13 +115,13 @@ public class Main {
 	 */
 	private static void showUsage() {
 		System.out.println("Usage:");
-		System.out.println("\t./nqueens FILENAME ALGORITHM HEURISTIC");
-		System.out.println("\t./nqueens SIZE ALGORITHM HEURISTIC\n");
+		System.out.println("\tjava Main FILENAME ALGORITHM HEURISTIC");
+		System.out.println("\tjava Main SIZE ALGORITHM HEURISTIC\n");
 		System.out.println("FILENAME: path to CSV board file");
 		System.out.println("SIZE: number of queens");
 		System.out.println("ALGORITHM: 1 for A*, 2 for greedy hill climbing");
 		System.out.println("HEURISTIC: H1 or H2");
 		System.out.println("Example:");
-		System.out.println("\t./nqueens 30 1 H2");
+		System.out.println("\tjava Main 30 1 H2");
 	}
 }
