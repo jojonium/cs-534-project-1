@@ -188,12 +188,13 @@ public class Board {
 
         int[] queen_positions = this.getQueenPositions();
         int N = this.getN();
-        int lowest_total_cost; // keeps track of lowest heuristic value
         String best_board; // keeps track of our best board
+        int lowest_total_cost = Integer.MAX_VALUE; // keeps track of our lowest solution cost
         int nodes_expanded = 0; // keeps track of how many nodes we have expanded
 
-        // keeps track of how much time has elapsed since we started
+        // keeps track of when we started and when we found our best solution
         long startTime = System.currentTimeMillis();
+        long bestTime = startTime;
 
         // calculate original heuristic of the board based on which one we are using
         int h;
@@ -209,7 +210,6 @@ public class Board {
 
         // initialize the mapping with the initial board and h value
         h_map.put(this.board_to_string(queen_positions), h);
-        lowest_total_cost = h;
         best_board = this.board_to_string(queen_positions);
 
         // create a priority queue to keep track of which boards are the most promising
@@ -235,13 +235,6 @@ public class Board {
             // increment the number of expanded nodes
             nodes_expanded += 1;
 
-            // if h value is 0, we win
-            if(h_to_use == 1) {
-                if (this.h1(new_positions) == 0) break;
-            } else {
-                if (this.h2(new_positions) == 0) break;
-            }
-
             // consider all possible board moves and add to queue
             for (int i = 0; i < N; i++) {
 
@@ -263,17 +256,32 @@ public class Board {
                             new_h = this.h2(temp_positions);
                         }
 
-                        // add these values to hash map and queue if they don't exist yet
-                        String board_string = this.board_to_string(temp_positions);
-                        if(!h_map.containsKey(board_string)) {
-                            h_map.put(board_string, new_h);
-                            queue.add(new AbstractMap.SimpleEntry<>(board_string, new_h));
+                        // calculate the total cost of movement
+                        int new_total_cost = this.calculate_movement_cost(temp_positions, queen_positions);
+
+                        // adding a new board config to the queue depends on whether we've found a valid solution yet
+                        if (new_h == 0) {
+                            String board_string = this.board_to_string(temp_positions);
+                            if(!h_map.containsKey(board_string)) {
+                                h_map.put(board_string, new_h);
+                                queue.add(new AbstractMap.SimpleEntry<>(board_string, new_h));
+                            }
+                        } else {
+                            // only add if the total cost is less than the lowest total cost
+                            if (new_total_cost < lowest_total_cost) {
+                                String board_string = this.board_to_string(temp_positions);
+                                if(!h_map.containsKey(board_string)) {
+                                    h_map.put(board_string, new_h);
+                                    queue.add(new AbstractMap.SimpleEntry<>(board_string, new_h));
+                                }
+                            }
                         }
 
                         // store best board we have
-                        if (new_h < lowest_total_cost) {
-                            lowest_total_cost = new_h;
+                        if (new_h == 0 && new_total_cost < lowest_total_cost) {
+                            lowest_total_cost = new_total_cost;
                             best_board = this.board_to_string(temp_positions);
+                            bestTime = System.currentTimeMillis();
                         }
                     }
                 }
@@ -281,11 +289,10 @@ public class Board {
         }
 
         // at the end, print final board and statistics
-        long endTime = System.currentTimeMillis();
         System.out.println("Final board configuration:");
         int[] best_board_positions = this.string_to_board(best_board);
         this.printBoard(best_board_positions);
-        this.print_statistics(startTime, endTime, best_board_positions, queen_positions, h_to_use, nodes_expanded);
+        this.print_statistics(startTime, bestTime, best_board_positions, queen_positions, h_to_use, nodes_expanded);
 
     }
 
@@ -296,20 +303,37 @@ public class Board {
     public void hillClimb(int h_to_use) {
 
         int[] queen_positions = this.getQueenPositions();
+        int queen_length = this.getQueenPositions().length;
         int N = this.getN();
+
+        int current_h; // keeps track of current h value
         int lowest_h; // keeps track of lowest h value
+        int lowest_total_cost = Integer.MAX_VALUE; // keeps track of the lowest cost board
+        String best_board = this.board_to_string(queen_positions);
         int nodes_expanded = 0; // keeps track of how many nodes we expanded
 
         ArrayList<int[]> sideways_moves = new ArrayList<>();
         int total_sideways_moves = 5; // keeps track of how many sideways moves are available at each iteration
         int sideways_moves_left = 5; // tells us how many sideways moves we have remaining
 
+        // create a mapping of board string representations
+        // Example: "10230" represents [1, 0, 2, 3, 0] for each queen's row position on the board (index = column)
+        Map<String,String> visited = new HashMap<>();
+
         // create a clone of the queen positions for each new piece
-        int[] original_positions = new int[this.getQueenPositions().length];
-        System.arraycopy(this.getQueenPositions(), 0, original_positions, 0, this.getQueenPositions().length);
+        int[] original_positions = new int[queen_length];
+        System.arraycopy(queen_positions, 0, original_positions, 0, queen_length);
+
+        // calculate heuristic of the original board based on which one we are using
+        if (h_to_use == 1) {
+            lowest_h = this.h1(queen_positions);
+        } else {
+            lowest_h = this.h2(queen_positions);
+        }
 
         // keeps track of how much time has elapsed since we started
         long startTime = System.currentTimeMillis();
+        long bestTime = startTime;
 
         while(true) {
 
@@ -317,18 +341,19 @@ public class Board {
             long currentTime = System.currentTimeMillis();
             if ( (currentTime - startTime) > 10000) break;
 
-            // increment the number of nodes expanded
-            nodes_expanded += 1;
+            // increment the number of nodes expanded if we haven't visited it yet
+            String board_string = this.board_to_string(queen_positions);
+            if(!visited.containsKey(board_string)) {
+                visited.put(board_string, board_string);
+                nodes_expanded += 1;
+            }
 
             // calculate heuristic of the board based on which one we are using
             if (h_to_use == 1) {
-                lowest_h = this.h1(queen_positions);
+                current_h = this.h1(queen_positions);
             } else {
-                lowest_h = this.h2(queen_positions);
+                current_h = this.h2(queen_positions);
             }
-
-            // we win if no queens are attacking
-            if(lowest_h == 0) break;
 
             // keep track of whether we improved
             boolean improvement = false;
@@ -339,8 +364,8 @@ public class Board {
             for (int index = 0; index < N; index++) {
 
                 // create a clone of the queen positions for each new piece
-                int[] temp_positions = new int[this.getQueenPositions().length];
-                System.arraycopy(this.getQueenPositions(), 0, temp_positions, 0, this.getQueenPositions().length);
+                int[] temp_positions = new int[queen_length];
+                System.arraycopy(queen_positions, 0, temp_positions, 0, queen_length);
 
                 // for each queen, consider each of its moves
                 for (int j = 0; j < N; j++) {
@@ -348,7 +373,7 @@ public class Board {
                     if (j != queen_positions[index]) {
                         temp_positions = this.move_queen(index, j, temp_positions);
 
-                        // move the queen that produces the lowest heuristic value
+                        // calculate the heuristic of the possible move
                         int new_h;
                         if (h_to_use == 1) {
                             new_h = this.h1(temp_positions);
@@ -356,13 +381,23 @@ public class Board {
                             new_h = this.h2(temp_positions);
                         }
 
-                        if (new_h < lowest_h) {
+                        // if this is the lowest board we've ever seen, keep track of it
+                        int current_cost = this.calculate_movement_cost(temp_positions, original_positions);
+                        if ( (new_h <= lowest_h && current_cost < lowest_total_cost) || (new_h < lowest_h) ) {
                             lowest_h = new_h;
+                            lowest_total_cost = current_cost;
+                            best_board = this.board_to_string(temp_positions);
+                            bestTime = System.currentTimeMillis();
+                        }
+
+                        // if we improved on our heuristic, remember the move we improved on
+                        if (new_h < current_h) {
+                            current_h = new_h;
                             current_queen = index;
                             h_index = j;
                             improvement = true;
                             sideways_moves.clear();
-                        } else if (new_h == lowest_h) {
+                        } else if (new_h == current_h) {
                             // add a sideways move given by (queen column, new queen row in that column)
                             int[] move_values = new int[]{index, j};
                             sideways_moves.add(move_values);
@@ -375,7 +410,7 @@ public class Board {
             if (!improvement && sideways_moves_left == 0) {
                 total_sideways_moves += 1;
                 sideways_moves_left = total_sideways_moves;
-                System.arraycopy(original_positions, 0, queen_positions, 0, this.getQueenPositions().length);
+                System.arraycopy(original_positions, 0, queen_positions, 0, queen_length);
             } else if (!improvement && sideways_moves_left > 0) {
                 // if we still have sideways moves remaining, perform a sideways move
                 sideways_moves_left -= 1;
@@ -400,10 +435,10 @@ public class Board {
         }
 
         // at the end, print statistics
-        long endTime = System.currentTimeMillis();
         System.out.println("Final board configuration:");
-        this.printBoard(queen_positions);
-        this.print_statistics(startTime, endTime, queen_positions, original_positions, h_to_use, nodes_expanded);
+        int[] best_positions = this.string_to_board(best_board);
+        this.printBoard(best_positions);
+        this.print_statistics(startTime, bestTime, best_positions, original_positions, h_to_use, nodes_expanded);
 
     }
 
@@ -538,10 +573,13 @@ public class Board {
             System.out.println("Final heuristic value of board: " + this.h2(final_positions));
         }
         System.out.println("Number of nodes expanded: " + nodes_expanded);
-        System.out.println("Total time elapsed before finding a solution (milliseconds): " + time_elapsed);
+        System.out.println("Time at which best solution was found (milliseconds): " + time_elapsed);
         int search_depth = this.calculate_search_depth(final_positions, original_positions);
         System.out.println("Minimum search depth of tree: " + search_depth);
-        if (search_depth > 0) System.out.println("Effective branching factor: " + (nodes_expanded / search_depth));
+        if (search_depth > 0) {
+            int ebf = (int) Math.pow(nodes_expanded, (1.0 / search_depth));
+            System.out.println("Effective branching factor: " + ebf);
+        }
         System.out.println("Total solution cost: " + this.calculate_movement_cost(final_positions, original_positions));
         System.out.println("Moves to reach goal: ");
         this.print_move_sequence(final_positions, original_positions);
